@@ -1,14 +1,37 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { VisionLogo } from "@/components/icons/VisionLogo";
 
-const Index = () => {
+export default function Index() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Simulate splash screen, then redirect to auth
+    const timer = setTimeout(() => {
+      navigate("/auth");
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [navigate]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+      <div className="animate-fade-in flex flex-col items-center">
+        <VisionLogo size={100} className="animate-pulse-soft" />
+        <h1 className="text-3xl font-bold text-foreground mt-6">VISION AI</h1>
+        <p className="text-muted-foreground mt-2">Tu asistente visual inteligente</p>
+      </div>
+      
+      {/* Loading indicator */}
+      <div className="absolute bottom-20 flex gap-1">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="w-2 h-2 rounded-full bg-primary animate-pulse"
+            style={{ animationDelay: `${i * 200}ms` }}
+          />
+        ))}
       </div>
     </div>
   );
-};
-
-export default Index;
+}

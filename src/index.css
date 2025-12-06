@@ -2,95 +2,100 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Vision AI Design System - Mobile-First, Accessibility-First */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core backgrounds - Deep navy tones */
+    --background: 231 37% 14%;
+    --foreground: 0 0% 100%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Cards and elevated surfaces */
+    --card: 235 30% 20%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    /* Popover/Modal backgrounds */
+    --popover: 235 30% 20%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Vibrant violet for main actions */
+    --primary: 263 84% 58%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Warm amber for secondary actions */
+    --secondary: 38 92% 50%;
+    --secondary-foreground: 231 37% 14%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted surfaces and text */
+    --muted: 235 25% 25%;
+    --muted-foreground: 240 5% 65%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - Same as secondary for consistency */
+    --accent: 38 92% 50%;
+    --accent-foreground: 231 37% 14%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Semantic colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 231 37% 14%;
+    
+    --info: 239 84% 67%;
+    --info-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* UI elements */
+    --border: 235 25% 30%;
+    --input: 235 30% 22%;
+    --ring: 263 84% 58%;
 
-    --radius: 0.5rem;
+    /* Border radius - Generous for accessibility */
+    --radius: 1rem;
+    --radius-lg: 1.25rem;
+    --radius-xl: 1.5rem;
+    --radius-pill: 9999px;
 
-    --sidebar-background: 0 0% 98%;
+    /* Touch targets */
+    --touch-min: 48px;
+    --touch-comfortable: 56px;
+    --touch-large: 64px;
+    --touch-hero: 80px;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar (if needed) */
+    --sidebar-background: 231 37% 14%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 263 84% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 235 30% 25%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 235 25% 30%;
+    --sidebar-ring: 263 84% 58%;
   }
 
+  /* No light mode - dark only for OLED battery savings */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 231 37% 14%;
+    --foreground: 0 0% 100%;
+    --card: 235 30% 20%;
+    --card-foreground: 0 0% 100%;
+    --popover: 235 30% 20%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 263 84% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 38 92% 50%;
+    --secondary-foreground: 231 37% 14%;
+    --muted: 235 25% 25%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 231 37% 14%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 235 25% 30%;
+    --input: 235 30% 22%;
+    --ring: 263 84% 58%;
   }
 }
 
@@ -99,7 +104,195 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    letter-spacing: 0.015em;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Ensure minimum touch targets */
+  button, a, input, select, textarea {
+    min-height: var(--touch-min);
+  }
+
+  /* Focus states for accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Respect reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Hero button - Main CTA style */
+  .btn-hero {
+    @apply flex items-center justify-center gap-4 w-full px-8 py-6 
+           bg-primary text-primary-foreground font-semibold text-xl
+           rounded-[20px] transition-all duration-200 ease-out
+           active:scale-[0.97] active:brightness-110
+           focus-visible:ring-4 focus-visible:ring-primary/50;
+    min-height: var(--touch-hero);
+  }
+
+  .btn-hero:disabled {
+    @apply opacity-40 cursor-not-allowed active:scale-100;
+  }
+
+  /* Secondary hero button */
+  .btn-hero-secondary {
+    @apply flex items-center justify-center gap-4 w-full px-8 py-5
+           bg-secondary text-secondary-foreground font-semibold text-lg
+           rounded-[20px] transition-all duration-200 ease-out
+           active:scale-[0.97] active:brightness-110
+           focus-visible:ring-4 focus-visible:ring-secondary/50;
+    min-height: var(--touch-large);
+  }
+
+  /* Large input fields */
+  .input-large {
+    @apply w-full h-14 px-4 bg-input text-foreground text-base
+           rounded-xl border border-border
+           placeholder:text-muted-foreground
+           focus:border-primary focus:ring-2 focus:ring-primary/30
+           transition-all duration-200;
+  }
+
+  /* Card component */
+  .card-elevated {
+    @apply bg-card rounded-2xl p-5 border border-border/50
+           shadow-[0_2px_12px_rgba(0,0,0,0.3)];
+  }
+
+  /* Bottom navigation */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 h-[70px] bg-card/95 backdrop-blur-sm
+           border-t border-border flex items-center justify-around
+           px-4 safe-area-pb z-50;
+  }
+
+  .bottom-nav-item {
+    @apply flex flex-col items-center justify-center gap-1 px-4 py-2
+           text-muted-foreground transition-colors duration-200 min-h-[var(--touch-min)]
+           rounded-xl;
+  }
+
+  .bottom-nav-item.active {
+    @apply text-primary;
+  }
+
+  .bottom-nav-item:active {
+    @apply bg-primary/10;
+  }
+
+  /* Safe area utilities */
+  .safe-area-pb {
+    padding-bottom: max(env(safe-area-inset-bottom), 8px);
+  }
+
+  .safe-area-pt {
+    padding-top: max(env(safe-area-inset-top), 8px);
+  }
+
+  /* Pulse animation for main CTA */
+  .pulse-soft {
+    animation: pulse-soft 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 12px hsl(var(--primary) / 0);
+    }
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply bg-muted animate-pulse rounded-lg;
+  }
+
+  /* Status indicator */
+  .status-dot {
+    @apply w-3 h-3 rounded-full;
+  }
+
+  .status-dot.online {
+    @apply bg-success;
+  }
+
+  .status-dot.warning {
+    @apply bg-warning;
+  }
+
+  .status-dot.offline {
+    @apply bg-destructive;
+  }
+}
+
+@layer utilities {
+  /* Text utilities for accessibility */
+  .text-body {
+    @apply text-lg leading-relaxed;
+  }
+
+  .text-large {
+    @apply text-xl leading-relaxed font-medium;
+  }
+
+  /* Touch-friendly spacing */
+  .touch-spacing {
+    @apply gap-4 space-y-4;
+  }
+
+  /* Screen reader only */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Fade in animation */
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out forwards;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Scale tap feedback */
+  .tap-scale {
+    @apply transition-transform duration-150 active:scale-[0.97];
   }
 }
