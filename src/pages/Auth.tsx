@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { VisionLogo } from "@/components/icons/VisionLogo";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { useToast } from "@/hooks/use-toast";
+import { useVoice } from "@/hooks/useVoice";
 import { cn } from "@/lib/utils";
 
 type AuthMode = "login" | "register" | "forgot";
@@ -18,6 +19,7 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { speak } = useVoice();
 
   // Form states
   const [email, setEmail] = useState("");
@@ -25,14 +27,31 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
 
+  // Announce page on mount and mode change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (mode === "login") {
+        speak("Pantalla de inicio de sesión. Ingresa tu email y contraseña.");
+      } else if (mode === "register") {
+        speak("Crear cuenta nueva. Completa los siguientes campos: nombre, email y contraseña.");
+      } else {
+        speak("Recuperar contraseña. Ingresa tu email para recibir un enlace.");
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [mode]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    speak("Procesando", { priority: true });
 
     // Simulate auth delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     if (mode === "login") {
+      speak("¡Bienvenido de vuelta! Iniciando sesión.");
       toast({
         title: "¡Bienvenido de vuelta!",
         description: "Iniciando sesión...",
@@ -40,6 +59,7 @@ export default function Auth() {
       navigate("/dashboard");
     } else if (mode === "register") {
       if (password !== confirmPassword) {
+        speak("Error: Las contraseñas no coinciden.");
         toast({
           title: "Las contraseñas no coinciden",
           description: "Por favor, verifica que las contraseñas sean iguales",
@@ -48,12 +68,14 @@ export default function Auth() {
         setIsLoading(false);
         return;
       }
+      speak("¡Cuenta creada exitosamente! Bienvenido a Vision AI.");
       toast({
         title: "¡Cuenta creada!",
         description: "Bienvenido a Vision AI",
       });
       navigate("/onboarding");
     } else if (mode === "forgot") {
+      speak("Correo de recuperación enviado. Revisa tu bandeja de entrada.");
       toast({
         title: "Correo enviado",
         description: "Revisa tu bandeja de entrada para restablecer tu contraseña",
@@ -82,6 +104,13 @@ export default function Auth() {
   };
 
   const passwordStrength = getPasswordStrength(password);
+
+  const handleModeChange = (newMode: AuthMode) => {
+    setMode(newMode);
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+  };
 
   return (
     <MobileLayout className="flex flex-col justify-center py-8">
@@ -112,6 +141,7 @@ export default function Auth() {
                 placeholder="Tu nombre"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onFocus={() => speak("Campo nombre completo")}
                 icon={<User className="w-5 h-5" />}
                 required
                 autoComplete="name"
@@ -129,6 +159,7 @@ export default function Auth() {
               placeholder="correo@ejemplo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onFocus={() => speak("Campo correo electrónico")}
               icon={<Mail className="w-5 h-5" />}
               required
               autoComplete="email"
@@ -147,6 +178,7 @@ export default function Auth() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => speak("Campo contraseña")}
                   icon={<Lock className="w-5 h-5" />}
                   required
                   autoComplete={mode === "login" ? "current-password" : "new-password"}
@@ -154,7 +186,10 @@ export default function Auth() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => {
+                    setShowPassword(!showPassword);
+                    speak(showPassword ? "Contraseña oculta" : "Contraseña visible");
+                  }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
                   aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                 >
@@ -196,6 +231,7 @@ export default function Auth() {
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    onFocus={() => speak("Campo confirmar contraseña")}
                     icon={<Lock className="w-5 h-5" />}
                     error={confirmPassword.length > 0 && password !== confirmPassword}
                     required
@@ -204,7 +240,10 @@ export default function Auth() {
                   />
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    onClick={() => {
+                      setShowConfirmPassword(!showConfirmPassword);
+                      speak(showConfirmPassword ? "Contraseña oculta" : "Contraseña visible");
+                    }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
                     aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                   >
@@ -218,7 +257,11 @@ export default function Auth() {
 
               <button
                 type="button"
-                onClick={() => setAcceptedTerms(!acceptedTerms)}
+                onClick={() => {
+                  setAcceptedTerms(!acceptedTerms);
+                  speak(acceptedTerms ? "Términos desmarcados" : "Términos aceptados");
+                  if (navigator.vibrate) navigator.vibrate(50);
+                }}
                 className="flex items-start gap-3 w-full py-2 text-left min-h-[48px]"
                 aria-pressed={acceptedTerms}
               >
@@ -243,7 +286,8 @@ export default function Auth() {
           {mode === "login" && (
             <button
               type="button"
-              onClick={() => setMode("forgot")}
+              onClick={() => handleModeChange("forgot")}
+              onFocus={() => speak("Enlace olvidaste tu contraseña")}
               className="text-sm text-primary hover:underline block w-full text-right min-h-[44px] flex items-center justify-end"
             >
               ¿Olvidaste tu contraseña?
@@ -255,6 +299,11 @@ export default function Auth() {
             variant="hero"
             size="hero"
             disabled={isLoading || (mode === "register" && !acceptedTerms)}
+            onMouseEnter={() => {
+              if (mode === "login") speak("Botón iniciar sesión");
+              else if (mode === "register") speak("Botón crear cuenta");
+              else speak("Botón enviar correo");
+            }}
             className="mt-6"
           >
             {isLoading ? (
@@ -277,7 +326,8 @@ export default function Auth() {
           <p className="text-muted-foreground">
             ¿No tienes cuenta?{" "}
             <button
-              onClick={() => setMode("register")}
+              onClick={() => handleModeChange("register")}
+              onFocus={() => speak("Enlace crear cuenta")}
               className="text-primary font-semibold hover:underline min-h-[44px] px-2"
             >
               Crear cuenta
@@ -288,7 +338,8 @@ export default function Auth() {
           <p className="text-muted-foreground">
             ¿Ya tienes cuenta?{" "}
             <button
-              onClick={() => setMode("login")}
+              onClick={() => handleModeChange("login")}
+              onFocus={() => speak("Enlace iniciar sesión")}
               className="text-primary font-semibold hover:underline min-h-[44px] px-2"
             >
               Iniciar sesión
@@ -297,7 +348,8 @@ export default function Auth() {
         )}
         {mode === "forgot" && (
           <button
-            onClick={() => setMode("login")}
+            onClick={() => handleModeChange("login")}
+            onFocus={() => speak("Enlace volver al inicio de sesión")}
             className="text-primary font-semibold hover:underline min-h-[44px] px-2"
           >
             Volver al inicio de sesión

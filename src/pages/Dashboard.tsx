@@ -1,12 +1,45 @@
+import { useEffect } from "react";
 import { Camera, Image, Settings, Wifi, BatteryMedium, Volume2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { VisionLogo } from "@/components/icons/VisionLogo";
+import { useVoice } from "@/hooks/useVoice";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { speak, speakOnClick } = useVoice();
+
+  // Announce on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      speak("Pantalla principal. Dos opciones disponibles: Iniciar recorrido para detectar obstáculos. Analizar foto para describir imágenes.");
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleStartRoute = () => {
+    speak("Iniciando recorrido", { priority: true });
+    if (navigator.vibrate) {
+      navigator.vibrate(100);
+    }
+    setTimeout(() => navigate("/route"), 200);
+  };
+
+  const handleAnalyzePhoto = () => {
+    speak("Abriendo análisis de foto", { priority: true });
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+    setTimeout(() => navigate("/analyze"), 200);
+  };
+
+  const handleSettings = () => {
+    speak("Abriendo configuración", { priority: true });
+    navigate("/settings");
+  };
 
   return (
     <MobileLayout showBottomNav className="flex flex-col py-6">
@@ -22,7 +55,9 @@ export default function Dashboard() {
         <Button
           variant="ghost"
           size="icon-lg"
-          onClick={() => navigate("/settings")}
+          onClick={handleSettings}
+          onMouseEnter={() => speak("Botón configuración")}
+          onFocus={() => speak("Botón configuración")}
           aria-label="Configuración"
         >
           <Settings className="w-6 h-6" />
@@ -39,7 +74,9 @@ export default function Dashboard() {
           <Button
             variant="hero"
             size="hero"
-            onClick={() => navigate("/route")}
+            onClick={handleStartRoute}
+            onMouseEnter={() => speak("Botón iniciar recorrido. Detecta obstáculos en tiempo real.")}
+            onFocus={() => speak("Botón iniciar recorrido. Detecta obstáculos en tiempo real.")}
             className="h-full min-h-[200px] flex-col gap-4 animate-pulse-soft"
           >
             <div className="w-20 h-20 rounded-full bg-primary-foreground/20 flex items-center justify-center">
@@ -62,7 +99,9 @@ export default function Dashboard() {
           <Button
             variant="hero-secondary"
             size="hero-secondary"
-            onClick={() => navigate("/analyze")}
+            onClick={handleAnalyzePhoto}
+            onMouseEnter={() => speak("Botón analizar foto. Describe cualquier imagen.")}
+            onFocus={() => speak("Botón analizar foto. Describe cualquier imagen.")}
             className="h-full min-h-[120px] flex-col gap-3"
           >
             <div className="w-14 h-14 rounded-full bg-secondary-foreground/20 flex items-center justify-center">
