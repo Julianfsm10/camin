@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Camera, Image, UserCog, Wifi, BatteryMedium, Volume2 } from "lucide-react";
+import { Camera, Image, Settings, Wifi, BatteryMedium, Volume2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MobileLayout } from "@/components/layout/MobileLayout";
@@ -37,8 +37,8 @@ export default function Dashboard() {
   };
 
   const handleSettings = () => {
-    speak("Abriendo personalización", { priority: true });
-    navigate("/personalizacion");
+    speak("Abriendo configuración", { priority: true });
+    navigate("/settings");
   };
 
   return (
@@ -56,11 +56,11 @@ export default function Dashboard() {
           variant="ghost"
           size="icon-lg"
           onClick={handleSettings}
-          onMouseEnter={() => speak("Botón personalización")}
-          onFocus={() => speak("Botón personalización")}
-          aria-label="Personalización"
+          onMouseEnter={() => speak("Botón configuración")}
+          onFocus={() => speak("Botón configuración")}
+          aria-label="Configuración"
         >
-          <UserCog className="w-6 h-6" />
+          <Settings className="w-6 h-6" />
         </Button>
       </header>
 
