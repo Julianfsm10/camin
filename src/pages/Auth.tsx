@@ -3,6 +3,7 @@ import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { VoiceInputButton } from "@/components/ui/VoiceInputButton";
 import { CaminAILogo } from "@/components/icons/CaminAILogo";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { useToast } from "@/hooks/use-toast";
@@ -65,7 +66,7 @@ export default function Auth() {
         speak("Recuperar contraseña. Ingresa tu email para recibir un enlace.");
       }
     }, 500);
-    
+
     return () => clearTimeout(timer);
   }, [mode]);
 
@@ -88,7 +89,7 @@ export default function Auth() {
           } else if (error.message.includes("Email not confirmed")) {
             errorMessage = "Por favor confirma tu email antes de iniciar sesión";
           }
-          
+
           speak(`Error: ${errorMessage}`);
           toast({
             title: "Error de autenticación",
@@ -105,7 +106,7 @@ export default function Auth() {
           description: "Iniciando sesión...",
         });
         // Navigation handled by auth state listener
-        
+
       } else if (mode === "register") {
         if (password !== confirmPassword) {
           speak("Error: Las contraseñas no coinciden.");
@@ -130,7 +131,7 @@ export default function Auth() {
         }
 
         const redirectUrl = `${window.location.origin}/`;
-        
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -149,7 +150,7 @@ export default function Auth() {
           } else if (error.message.includes("Invalid email")) {
             errorMessage = "El email ingresado no es válido";
           }
-          
+
           speak(`Error: ${errorMessage}`);
           toast({
             title: "Error de registro",
@@ -166,7 +167,7 @@ export default function Auth() {
           description: "Bienvenido a CaminAI",
         });
         navigate("/onboarding");
-        
+
       } else if (mode === "forgot") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/auth`,
@@ -211,7 +212,7 @@ export default function Auth() {
 
     const labels = ["Muy débil", "Débil", "Regular", "Fuerte", "Muy fuerte"];
     const colors = ["bg-destructive", "bg-destructive", "bg-warning", "bg-success", "bg-success"];
-    
+
     return {
       strength,
       label: labels[strength],
@@ -251,17 +252,28 @@ export default function Auth() {
               <label htmlFor="name" className="text-sm font-medium text-foreground">
                 Nombre completo
               </label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Tu nombre"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onFocus={() => speak("Campo nombre completo")}
-                icon={<User className="w-5 h-5" />}
-                required
-                autoComplete="name"
-              />
+              <div className="relative">
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Tu nombre"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onFocus={() => speak("Campo nombre completo")}
+                  icon={<User className="w-5 h-5" />}
+                  required
+                  autoComplete="name"
+                  className="pr-16"
+                />
+                <VoiceInputButton
+                  onTranscript={(text) => {
+                    setName(text);
+                    speak(`Nombre dictado: ${text}`);
+                  }}
+                  fieldName="nombre"
+                  fieldType="name"
+                />
+              </div>
             </div>
           )}
 
@@ -269,17 +281,28 @@ export default function Auth() {
             <label htmlFor="email" className="text-sm font-medium text-foreground">
               Correo electrónico
             </label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="correo@ejemplo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onFocus={() => speak("Campo correo electrónico")}
-              icon={<Mail className="w-5 h-5" />}
-              required
-              autoComplete="email"
-            />
+            <div className="relative">
+              <Input
+                id="email"
+                type="email"
+                placeholder="correo@ejemplo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => speak("Campo correo electrónico")}
+                icon={<Mail className="w-5 h-5" />}
+                required
+                autoComplete="email"
+                className="pr-16"
+              />
+              <VoiceInputButton
+                onTranscript={(text) => {
+                  setEmail(text);
+                  speak(`Email dictado: ${text}`);
+                }}
+                fieldName="email"
+                fieldType="email"
+              />
+            </div>
           </div>
 
           {mode !== "forgot" && (
@@ -298,7 +321,16 @@ export default function Auth() {
                   icon={<Lock className="w-5 h-5" />}
                   required
                   autoComplete={mode === "login" ? "current-password" : "new-password"}
-                  className="pr-12"
+                  className="pr-24"
+                />
+                <VoiceInputButton
+                  onTranscript={(text) => {
+                    setPassword(text);
+                    speak("Contraseña dictada");
+                  }}
+                  fieldName="contraseña"
+                  fieldType="password"
+                  className="right-16"
                 />
                 <button
                   type="button"
@@ -312,7 +344,7 @@ export default function Auth() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              
+
               {mode === "register" && password && (
                 <div className="space-y-1">
                   <div className="flex gap-1">
@@ -352,7 +384,16 @@ export default function Auth() {
                     error={confirmPassword.length > 0 && password !== confirmPassword}
                     required
                     autoComplete="new-password"
-                    className="pr-12"
+                    className="pr-24"
+                  />
+                  <VoiceInputButton
+                    onTranscript={(text) => {
+                      setConfirmPassword(text);
+                      speak("Contraseña de confirmación dictada");
+                    }}
+                    fieldName="confirmar contraseña"
+                    fieldType="password"
+                    className="right-16"
                   />
                   <button
                     type="button"
