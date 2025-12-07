@@ -238,11 +238,11 @@ VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_key
 
 ## 📞 Contacto
 
-**Camina AI** - Autonomía Visual para Todos
+**Camin AI** - Autonomía Visual para Todos
 
-🌐 [camina-ai.com](https://camina-ai.com)  
-📧 contacto@camina-ai.com  
-🐦 [@CaminaAI](https://twitter.com/CaminaAI)
+🌐 [camin-ai.com](https://camin-ai.com)  
+📧 contacto@camin-ai.com  
+🐦 [@CaminAI](https://twitter.com/CaminAI)
 
 ---
 
@@ -254,11 +254,11 @@ Este proyecto está bajo licencia MIT. Ver el archivo `LICENSE` para más detall
 
 ## 🙏 Agradecimientos
 
-Gracias a todas las personas con discapacidad visual que nos ayudaron a validar y mejorar Camina AI. Este proyecto existe para ustedes.
+Gracias a todas las personas con discapacidad visual que nos ayudaron a validar y mejorar Camin AI. Este proyecto existe para ustedes.
 
 ---
 
-> **"Camina AI no es solo una app. Es un movimiento hacia un mundo donde la discapacidad visual no signifique dependencia. Únete a nosotros para hacer accesible lo invisible."**
+> **"Camin AI no es solo una app. Es un movimiento hacia un mundo donde la discapacidad visual no signifique dependencia. Únete a nosotros para hacer accesible lo invisible."**
 
 ---
 
