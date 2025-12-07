@@ -163,7 +163,7 @@ export default function Profile() {
           {isLoggingOut ? "Cerrando..." : "Cerrar sesión"}
         </Button>
 
-        <p className="text-center text-sm text-muted-foreground">Vision AI v1.0.0</p>
+        <p className="text-center text-sm text-muted-foreground">CaminAI v1.0.0</p>
       </MobileLayout>
       <BottomNav />
     </>

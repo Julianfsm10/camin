@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Camera, Mic, MapPin, Volume2, Vibrate, ArrowRight, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { VisionLogo } from "@/components/icons/VisionLogo";
+import { CaminAILogo } from "@/components/icons/CaminAILogo";
 import { useVoice } from "@/hooks/useVoice";
 import { cn } from "@/lib/utils";
 
@@ -17,10 +17,10 @@ interface OnboardingStep {
 
 const steps: OnboardingStep[] = [
   {
-    icon: <VisionLogo size={80} />,
-    title: "Bienvenido a Vision AI",
-    description: "Tu asistente visual inteligente que te ayuda a navegar el mundo con confianza.",
-    voiceDescription: "Bienvenido a Vision AI. Tu asistente visual inteligente que te ayuda a navegar el mundo con confianza.",
+    icon: <CaminAILogo size={80} />,
+    title: "Bienvenido a CaminAI",
+    description: "Tu asistente de movilidad con IA que te ayuda a navegar el mundo con confianza.",
+    voiceDescription: "Bienvenido a CaminAI. Tu asistente de movilidad con inteligencia artificial que te ayuda a navegar el mundo con confianza.",
   },
   {
     icon: <Camera className="w-16 h-16" />,
@@ -60,8 +60,8 @@ const steps: OnboardingStep[] = [
   {
     icon: <Check className="w-16 h-16" />,
     title: "¡Todo listo!",
-    description: "Ya puedes comenzar a usar Vision AI. Tu seguridad es nuestra prioridad.",
-    voiceDescription: "¡Todo listo! Ya puedes comenzar a usar Vision AI. Toca comenzar para ir al panel principal.",
+    description: "Ya puedes comenzar a usar CaminAI. Tu seguridad es nuestra prioridad.",
+    voiceDescription: "¡Todo listo! Ya puedes comenzar a usar CaminAI. Toca comenzar para ir al panel principal.",
   },
 ];
 
@@ -112,7 +112,7 @@ export default function Onboarding() {
 
   const handleNext = () => {
     if (isLastStep) {
-      speak("Iniciando Vision AI", { priority: true });
+      speak("Iniciando CaminAI", { priority: true });
       navigate("/dashboard");
     } else {
       setCurrentStep((prev) => prev + 1);

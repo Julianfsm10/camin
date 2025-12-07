@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { VisionLogo } from "@/components/icons/VisionLogo";
+import { CaminAILogo } from "@/components/icons/CaminAILogo";
 
 export default function Index() {
   const navigate = useNavigate();
@@ -17,9 +17,9 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center">
       <div className="animate-fade-in flex flex-col items-center">
-        <VisionLogo size={100} className="animate-pulse-soft" />
-        <h1 className="text-3xl font-bold text-foreground mt-6">VISION AI</h1>
-        <p className="text-muted-foreground mt-2">Tu asistente visual inteligente</p>
+        <CaminAILogo size={100} className="animate-pulse-soft" />
+        <h1 className="text-3xl font-bold text-foreground mt-6">CaminAI</h1>
+        <p className="text-muted-foreground mt-2">Tu asistente de movilidad con IA</p>
       </div>
       
       {/* Loading indicator */}
