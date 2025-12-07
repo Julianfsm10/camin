@@ -4,6 +4,12 @@ interface CaminAILogoProps {
 }
 
 export function CaminAILogo({ className, size = 60 }: CaminAILogoProps) {
+  // Using direct HSL colors matching the design system
+  const primaryColor = "#8B5CF6"; // hsl(263, 84%, 58%)
+  const primaryLight = "#A78BFA"; // lighter primary
+  const successColor = "#10B981"; // hsl(160, 84%, 39%)
+  const foregroundColor = "#FFFFFF"; // white
+
   return (
     <div
       className={className}
@@ -19,12 +25,12 @@ export function CaminAILogo({ className, size = 60 }: CaminAILogoProps) {
       >
         <defs>
           <linearGradient id="caminai-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--primary))" />
-            <stop offset="100%" stopColor="hsl(var(--primary) / 0.7)" />
+            <stop offset="0%" stopColor={primaryColor} />
+            <stop offset="100%" stopColor={primaryLight} stopOpacity="0.7" />
           </linearGradient>
           <linearGradient id="caminai-path" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="hsl(var(--success))" />
-            <stop offset="100%" stopColor="hsl(var(--primary))" />
+            <stop offset="0%" stopColor={successColor} />
+            <stop offset="100%" stopColor={primaryColor} />
           </linearGradient>
         </defs>
         
@@ -49,7 +55,7 @@ export function CaminAILogo({ className, size = 60 }: CaminAILogoProps) {
         {/* Walking cane icon */}
         <path
           d="M55 20 L55 65 Q55 72 48 72 L45 72"
-          stroke="hsl(var(--foreground))"
+          stroke={foregroundColor}
           strokeWidth="5"
           strokeLinecap="round"
           fill="none"
@@ -61,7 +67,7 @@ export function CaminAILogo({ className, size = 60 }: CaminAILogoProps) {
           cy="40" 
           r="12" 
           fill="none"
-          stroke="hsl(var(--primary))"
+          stroke={primaryColor}
           strokeWidth="2"
           strokeDasharray="4 2"
           opacity="0.6"
@@ -71,7 +77,7 @@ export function CaminAILogo({ className, size = 60 }: CaminAILogoProps) {
           cy="40" 
           r="20" 
           fill="none"
-          stroke="hsl(var(--primary))"
+          stroke={primaryColor}
           strokeWidth="1.5"
           strokeDasharray="6 3"
           opacity="0.4"
@@ -81,7 +87,7 @@ export function CaminAILogo({ className, size = 60 }: CaminAILogoProps) {
           cy="40" 
           r="28" 
           fill="none"
-          stroke="hsl(var(--primary))"
+          stroke={primaryColor}
           strokeWidth="1"
           strokeDasharray="8 4"
           opacity="0.2"
@@ -92,7 +98,7 @@ export function CaminAILogo({ className, size = 60 }: CaminAILogoProps) {
           cx="55" 
           cy="40" 
           r="4" 
-          fill="hsl(var(--primary))"
+          fill={primaryColor}
         />
       </svg>
     </div>
