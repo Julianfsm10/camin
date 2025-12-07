@@ -1,15 +1,26 @@
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VisionLogo } from "@/components/icons/VisionLogo";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { useToast } from "@/hooks/use-toast";
 import { useVoice } from "@/hooks/useVoice";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { z } from "zod";
 
 type AuthMode = "login" | "register" | "forgot";
+
+// Validation schemas
+const emailSchema = z.string().email("Email inválido").max(255);
+const passwordSchema = z
+  .string()
+  .min(8, "Mínimo 8 caracteres")
+  .regex(/[A-Z]/, "Debe incluir al menos una mayúscula")
+  .regex(/[0-9]/, "Debe incluir al menos un número");
+const nameSchema = z.string().min(3, "Mínimo 3 caracteres").max(100);
 
 export default function Auth() {
   const [mode, setMode] = useState<AuthMode>("login");
@@ -17,15 +28,27 @@ export default function Auth() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { speak } = useVoice();
+  const { signIn, signUp, resetPassword, user, loading } = useAuth();
 
   // Form states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!loading && user) {
+      const from = (location.state as any)?.from?.pathname || "/dashboard";
+      navigate(from, { replace: true });
+    }
+  }, [user, loading, navigate, location]);
 
   // Announce page on mount and mode change
   useEffect(() => {
@@ -42,39 +65,113 @@ export default function Auth() {
     return () => clearTimeout(timer);
   }, [mode]);
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    // Validate email
+    const emailResult = emailSchema.safeParse(email.trim());
+    if (!emailResult.success) {
+      newErrors.email = emailResult.error.errors[0].message;
+    }
+
+    if (mode !== "forgot") {
+      // Validate password
+      const passwordResult = passwordSchema.safeParse(password);
+      if (!passwordResult.success) {
+        newErrors.password = passwordResult.error.errors[0].message;
+      }
+    }
+
+    if (mode === "register") {
+      // Validate name
+      const nameResult = nameSchema.safeParse(name.trim());
+      if (!nameResult.success) {
+        newErrors.name = nameResult.error.errors[0].message;
+      }
+
+      // Validate confirm password
+      if (password !== confirmPassword) {
+        newErrors.confirmPassword = "Las contraseñas no coinciden";
+      }
+
+      // Validate terms
+      if (!acceptedTerms) {
+        newErrors.terms = "Debes aceptar los términos";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      const errorMessages = Object.values(errors).join(". ");
+      speak(`Errores en el formulario: ${errorMessages}`);
+      return;
+    }
+
     setIsLoading(true);
     speak("Procesando", { priority: true });
 
-    // Simulate auth delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
     if (mode === "login") {
+      const { error } = await signIn(email.trim(), password);
+      
+      if (error) {
+        speak(`Error: ${error}`);
+        toast({
+          title: "Error al iniciar sesión",
+          description: error,
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       speak("¡Bienvenido de vuelta! Iniciando sesión.");
       toast({
         title: "¡Bienvenido de vuelta!",
         description: "Iniciando sesión...",
       });
       navigate("/dashboard");
+      
     } else if (mode === "register") {
-      if (password !== confirmPassword) {
-        speak("Error: Las contraseñas no coinciden.");
+      const { error } = await signUp(email.trim(), password, name.trim());
+      
+      if (error) {
+        speak(`Error: ${error}`);
         toast({
-          title: "Las contraseñas no coinciden",
-          description: "Por favor, verifica que las contraseñas sean iguales",
+          title: "Error al crear cuenta",
+          description: error,
           variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
+
       speak("¡Cuenta creada exitosamente! Bienvenido a Vision AI.");
       toast({
         title: "¡Cuenta creada!",
         description: "Bienvenido a Vision AI",
       });
       navigate("/onboarding");
+      
     } else if (mode === "forgot") {
+      const { error } = await resetPassword(email.trim());
+      
+      if (error) {
+        speak(`Error: ${error}`);
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       speak("Correo de recuperación enviado. Revisa tu bandeja de entrada.");
       toast({
         title: "Correo enviado",
@@ -107,10 +204,23 @@ export default function Auth() {
 
   const handleModeChange = (newMode: AuthMode) => {
     setMode(newMode);
+    setErrors({});
     if (navigator.vibrate) {
       navigator.vibrate(50);
     }
   };
+
+  // Show loading while checking auth state
+  if (loading) {
+    return (
+      <MobileLayout className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <p className="text-muted-foreground">Cargando...</p>
+        </div>
+      </MobileLayout>
+    );
+  }
 
   return (
     <MobileLayout className="flex flex-col justify-center py-8">
@@ -143,9 +253,13 @@ export default function Auth() {
                 onChange={(e) => setName(e.target.value)}
                 onFocus={() => speak("Campo nombre completo")}
                 icon={<User className="w-5 h-5" />}
+                error={!!errors.name}
                 required
                 autoComplete="name"
               />
+              {errors.name && (
+                <p className="text-xs text-destructive">{errors.name}</p>
+              )}
             </div>
           )}
 
@@ -161,9 +275,13 @@ export default function Auth() {
               onChange={(e) => setEmail(e.target.value)}
               onFocus={() => speak("Campo correo electrónico")}
               icon={<Mail className="w-5 h-5" />}
+              error={!!errors.email}
               required
               autoComplete="email"
             />
+            {errors.email && (
+              <p className="text-xs text-destructive">{errors.email}</p>
+            )}
           </div>
 
           {mode !== "forgot" && (
@@ -180,6 +298,7 @@ export default function Auth() {
                   onChange={(e) => setPassword(e.target.value)}
                   onFocus={() => speak("Campo contraseña")}
                   icon={<Lock className="w-5 h-5" />}
+                  error={!!errors.password}
                   required
                   autoComplete={mode === "login" ? "current-password" : "new-password"}
                   className="pr-12"
@@ -196,6 +315,10 @@ export default function Auth() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              
+              {errors.password && (
+                <p className="text-xs text-destructive">{errors.password}</p>
+              )}
               
               {mode === "register" && password && (
                 <div className="space-y-1">
@@ -233,7 +356,7 @@ export default function Auth() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     onFocus={() => speak("Campo confirmar contraseña")}
                     icon={<Lock className="w-5 h-5" />}
-                    error={confirmPassword.length > 0 && password !== confirmPassword}
+                    error={!!errors.confirmPassword}
                     required
                     autoComplete="new-password"
                     className="pr-12"
@@ -250,8 +373,8 @@ export default function Auth() {
                     {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                {confirmPassword && password !== confirmPassword && (
-                  <p className="text-xs text-destructive">Las contraseñas no coinciden</p>
+                {errors.confirmPassword && (
+                  <p className="text-xs text-destructive">{errors.confirmPassword}</p>
                 )}
               </div>
 
@@ -280,6 +403,9 @@ export default function Auth() {
                   <span className="text-primary underline">términos y condiciones</span>
                 </span>
               </button>
+              {errors.terms && (
+                <p className="text-xs text-destructive">{errors.terms}</p>
+              )}
             </>
           )}
 
