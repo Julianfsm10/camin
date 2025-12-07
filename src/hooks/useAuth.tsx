@@ -47,20 +47,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string): Promise<Profile | null> => {
     try {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching profile:", error);
         return null;
       }
 
-      return data as Profile;
+      return data as Profile | null;
     } catch (error) {
       console.error("Error fetching profile:", error);
       return null;
@@ -75,16 +75,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let mounted = true;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        if (!mounted) return;
+        
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
 
         // Defer profile fetch to avoid deadlock
         if (currentSession?.user) {
           setTimeout(() => {
-            fetchProfile(currentSession.user.id).then(setProfile);
+            if (mounted) {
+              fetchProfile(currentSession.user.id).then((profileData) => {
+                if (mounted) setProfile(profileData);
+              });
+            }
           }, 0);
         } else {
           setProfile(null);
@@ -94,20 +102,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      if (!mounted) return;
+      
       setSession(existingSession);
       setUser(existingSession?.user ?? null);
       
       if (existingSession?.user) {
         fetchProfile(existingSession.user.id).then((profileData) => {
-          setProfile(profileData);
-          setLoading(false);
+          if (mounted) {
+            setProfile(profileData);
+            setLoading(false);
+          }
         });
       } else {
         setLoading(false);
       }
+    }).catch((error) => {
+      console.error("Error getting session:", error);
+      if (mounted) setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string): Promise<{ error: string | null }> => {
