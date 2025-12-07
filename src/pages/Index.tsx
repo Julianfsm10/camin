@@ -1,26 +1,18 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { VisionLogo } from "@/components/icons/VisionLogo";
-import { useAuth } from "@/hooks/useAuth";
 
 export default function Index() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
 
   useEffect(() => {
-    // Wait for auth to load, then redirect appropriately
-    if (!loading) {
-      const timer = setTimeout(() => {
-        if (user) {
-          navigate("/dashboard");
-        } else {
-          navigate("/auth");
-        }
-      }, 1500);
+    // Simulate splash screen, then redirect to auth
+    const timer = setTimeout(() => {
+      navigate("/auth");
+    }, 2000);
 
-      return () => clearTimeout(timer);
-    }
-  }, [navigate, user, loading]);
+    return () => clearTimeout(timer);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center">
