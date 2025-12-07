@@ -1,4 +1,4 @@
-# 🦯 Camina AI
+# 🦯 Camin AI
 
 **Una Vista al Futuro - Autonomía Visual Instantánea para 2.2 Billones**
 
