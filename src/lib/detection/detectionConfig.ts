@@ -1,6 +1,6 @@
 /**
  * Detection Configuration
- * Central configuration for all detection layers
+ * Central configuration for detection layers (COCO-SSD + Level Changes)
  */
 
 export const DETECTION_CONFIG = {
@@ -17,8 +17,7 @@ export const DETECTION_CONFIG = {
   CRITICAL_DISTANCE: 1.5,
   
   // Sizes
-  MIN_OBJECT_SIZE: 0.025, // Reduced to detect smaller objects
-  MIN_OBSTACLE_SIZE: 0.02,
+  MIN_OBJECT_SIZE: 0.025,
   
   // Level change detection
   LEVEL_DETECTION: {
@@ -46,12 +45,12 @@ export const DETECTION_CONFIG = {
     'couch', 'bed', 'dining table', 'tv', 'laptop',
   ],
   
-  // Analysis frequency
-  ANALYSIS_FPS: 10,
+  // Analysis frequency - increased from 10 to 15 (less processing without Layer 2)
+  ANALYSIS_FPS: 15,
 };
 
 export type DetectionPriority = 'critical' | 'high' | 'medium' | 'low';
-export type DetectionType = 'known_object' | 'unknown_obstacle' | 'stair_down' | 'stair_up' | 'curb' | 'fence';
+export type DetectionType = 'known_object' | 'stair_down' | 'stair_up' | 'curb' | 'fence';
 
 export interface EnhancedDetection {
   type: DetectionType;
@@ -76,7 +75,6 @@ export function getDetectionPriority(
   if (type === 'stair_down' || type === 'curb') return 'critical';
   if (type === 'stair_up') return 'high';
   if (type === 'fence') return 'medium';
-  if (type === 'unknown_obstacle') return distance < 1.5 ? 'high' : 'medium';
   
   // Known objects
   const criticalClasses = ['person', 'car', 'truck', 'bus', 'motorcycle'];
