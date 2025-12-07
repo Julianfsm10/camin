@@ -9,7 +9,6 @@ import Dashboard from "./pages/Dashboard";
 import ActiveRoute from "./pages/ActiveRoute";
 import AnalyzePhoto from "./pages/AnalyzePhoto";
 import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
@@ -29,7 +28,6 @@ const App = () => (
           <Route path="/route" element={<ActiveRoute />} />
           <Route path="/analyze" element={<AnalyzePhoto />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
