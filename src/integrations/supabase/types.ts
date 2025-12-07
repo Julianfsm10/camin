@@ -14,7 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          age: number | null
+          audio_enabled: boolean | null
+          created_at: string
+          dietary_preferences: string[] | null
+          dietary_preferences_other: string | null
+          disliked_foods: string | null
+          email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          food_allergies: string[] | null
+          food_allergies_other: string | null
+          full_name: string
+          gender: string | null
+          gender_other: string | null
+          high_contrast: boolean | null
+          id: string
+          medical_conditions: string[] | null
+          medical_conditions_other: string | null
+          updated_at: string
+          user_id: string
+          vibration_enabled: boolean | null
+        }
+        Insert: {
+          age?: number | null
+          audio_enabled?: boolean | null
+          created_at?: string
+          dietary_preferences?: string[] | null
+          dietary_preferences_other?: string | null
+          disliked_foods?: string | null
+          email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          food_allergies?: string[] | null
+          food_allergies_other?: string | null
+          full_name: string
+          gender?: string | null
+          gender_other?: string | null
+          high_contrast?: boolean | null
+          id?: string
+          medical_conditions?: string[] | null
+          medical_conditions_other?: string | null
+          updated_at?: string
+          user_id: string
+          vibration_enabled?: boolean | null
+        }
+        Update: {
+          age?: number | null
+          audio_enabled?: boolean | null
+          created_at?: string
+          dietary_preferences?: string[] | null
+          dietary_preferences_other?: string | null
+          disliked_foods?: string | null
+          email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          food_allergies?: string[] | null
+          food_allergies_other?: string | null
+          full_name?: string
+          gender?: string | null
+          gender_other?: string | null
+          high_contrast?: boolean | null
+          id?: string
+          medical_conditions?: string[] | null
+          medical_conditions_other?: string | null
+          updated_at?: string
+          user_id?: string
+          vibration_enabled?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
