@@ -10,7 +10,6 @@ import ActiveRoute from "./pages/ActiveRoute";
 import AnalyzePhoto from "./pages/AnalyzePhoto";
 import Profile from "./pages/Profile";
 import Onboarding from "./pages/Onboarding";
-import Personalizacion from "./pages/Personalizacion";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,7 +28,6 @@ const App = () => (
           <Route path="/route" element={<ActiveRoute />} />
           <Route path="/analyze" element={<AnalyzePhoto />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/personalizacion" element={<Personalizacion />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

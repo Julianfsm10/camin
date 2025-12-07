@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { User, Bell, Volume2, Vibrate, Shield, HelpCircle, LogOut, ChevronRight, Moon, Phone, Settings2 } from "lucide-react";
+import { User, Bell, Volume2, Vibrate, Shield, HelpCircle, LogOut, ChevronRight, Moon, Phone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -136,10 +136,9 @@ export default function Profile() {
           </section>
 
           <section>
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3 px-1">Cuenta</h3>
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3 px-1">Seguridad</h3>
             <div className="card-elevated divide-y divide-border">
-              <SettingItem icon={<Settings2 className="w-5 h-5" />} label="Personalización" description="Datos personales y salud" onClick={() => { speak("Abriendo personalización"); navigate("/personalizacion"); }} onSpeak={() => speak("Personalización. Datos personales y salud.")} />
-              <SettingItem icon={<Phone className="w-5 h-5" />} label="Contacto de emergencia" description="Configurar contacto" onClick={() => { speak("Abriendo personalización"); navigate("/personalizacion"); }} onSpeak={() => speak("Contacto de emergencia")} />
+              <SettingItem icon={<Phone className="w-5 h-5" />} label="Contacto de emergencia" description="No configurado" onClick={() => speak("Función próximamente disponible")} onSpeak={() => speak("Contacto de emergencia")} />
               <SettingItem icon={<Bell className="w-5 h-5" />} label="Notificaciones" onClick={() => speak("Función próximamente disponible")} onSpeak={() => speak("Notificaciones")} />
               <SettingItem icon={<Shield className="w-5 h-5" />} label="Privacidad" onClick={() => speak("Función próximamente disponible")} onSpeak={() => speak("Privacidad")} />
             </div>
