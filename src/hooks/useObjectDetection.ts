@@ -8,6 +8,8 @@ export interface Detection {
   bbox: [number, number, number, number]; // [x, y, width, height]
   distance: number;
   positionX: number;
+  position: 'izquierda' | 'adelante' | 'derecha';
+  inROI: boolean;
 }
 
 interface UseObjectDetectionOptions {
@@ -24,18 +26,48 @@ interface UseObjectDetectionReturn {
   stopDetection: () => void;
 }
 
-// Obstacle classes we care about
-const OBSTACLE_CLASSES = [
+// Detection configuration - optimized for 2m ahead x 1m wide zone
+const DETECTION_CONFIG = {
+  // ROI: Region of Interest - central zone representing ~2m ahead x 1m wide
+  ROI: {
+    xStart: 0.25,  // Start at 25% width (ignore left periphery)
+    xEnd: 0.75,    // End at 75% width (ignore right periphery)
+    yStart: 0.30,  // Start at 30% height (ignore sky/ceiling)
+    yEnd: 0.85,    // End at 85% height (ignore ground directly at feet)
+  },
+  MAX_DISTANCE: 3,       // Only alert for objects within 3 meters
+  MIN_OBJECT_SIZE: 0.03, // Minimum 3% of ROI area to filter tiny detections
+};
+
+// Relevant obstacle classes for mobility assistance
+const RELEVANT_CLASSES = [
   'person', 'car', 'truck', 'bus', 'bicycle', 'motorcycle',
   'dog', 'cat', 'chair', 'couch', 'potted plant', 'bed',
   'dining table', 'toilet', 'tv', 'laptop', 'cell phone',
   'book', 'bottle', 'cup', 'backpack', 'umbrella', 'handbag',
-  'suitcase', 'sports ball', 'skateboard', 'surfboard'
+  'suitcase', 'sports ball', 'skateboard', 'surfboard',
+  'bench', 'stop sign', 'traffic light', 'fire hydrant'
 ];
 
-// Approximate distance calculation based on bbox size
-function calculateDistance(bboxHeight: number, videoHeight: number, objectClass: string): number {
-  // Reference heights for objects at 1 meter (approximate)
+// Check if object center is within the ROI
+function isInROI(bbox: number[], videoWidth: number, videoHeight: number): boolean {
+  const [x, y, width, height] = bbox;
+  
+  // Calculate center of the object
+  const centerX = (x + width / 2) / videoWidth;
+  const centerY = (y + height / 2) / videoHeight;
+  
+  return (
+    centerX >= DETECTION_CONFIG.ROI.xStart &&
+    centerX <= DETECTION_CONFIG.ROI.xEnd &&
+    centerY >= DETECTION_CONFIG.ROI.yStart &&
+    centerY <= DETECTION_CONFIG.ROI.yEnd
+  );
+}
+
+// Estimate distance based on object size in frame
+function estimateDistance(bboxHeight: number, videoHeight: number, objectClass: string): number {
+  // Reference heights for objects at 1 meter (approximate percentages)
   const referenceHeights: Record<string, number> = {
     'person': 0.7,
     'car': 0.4,
@@ -52,11 +84,28 @@ function calculateDistance(bboxHeight: number, videoHeight: number, objectClass:
   const refHeight = referenceHeights[objectClass] || referenceHeights['default'];
   const normalizedHeight = bboxHeight / videoHeight;
   
-  // Simple inverse proportion for distance
+  // Inverse proportion for distance estimation
   const distance = refHeight / normalizedHeight;
   
-  // Clamp and round
-  return Math.max(0.5, Math.min(20, Math.round(distance)));
+  // Clamp between 0.5m and 20m, round to 1 decimal
+  return Math.max(0.5, Math.min(20, Math.round(distance * 10) / 10));
+}
+
+// Get relative position (left, center/ahead, right)
+function getRelativePosition(bbox: number[], videoWidth: number): 'izquierda' | 'adelante' | 'derecha' {
+  const [x, , width] = bbox;
+  const centerX = (x + width / 2) / videoWidth;
+  
+  if (centerX < 0.35) return 'izquierda';
+  if (centerX > 0.65) return 'derecha';
+  return 'adelante';
+}
+
+// Check if object is significant enough (not too small)
+function isSignificantObject(bbox: number[], videoWidth: number, videoHeight: number): boolean {
+  const [, , width, height] = bbox;
+  const area = (width * height) / (videoWidth * videoHeight);
+  return area >= DETECTION_CONFIG.MIN_OBJECT_SIZE;
 }
 
 export function useObjectDetection(options: UseObjectDetectionOptions = {}): UseObjectDetectionReturn {
@@ -121,20 +170,41 @@ export function useObjectDetection(options: UseObjectDetectionOptions = {}): Use
 
     try {
       const predictions = await modelRef.current.detect(video);
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
       
       const filteredDetections: Detection[] = predictions
+        // Filter by relevant classes and confidence
         .filter(pred => 
-          OBSTACLE_CLASSES.includes(pred.class) && 
+          RELEVANT_CLASSES.includes(pred.class) && 
           pred.score >= minConfidence
         )
-        .map(pred => ({
-          class: pred.class,
-          score: pred.score,
-          bbox: pred.bbox as [number, number, number, number],
-          distance: calculateDistance(pred.bbox[3], video.videoHeight, pred.class),
-          positionX: (pred.bbox[0] + pred.bbox[2] / 2) / video.videoWidth
-        }))
-        .sort((a, b) => a.distance - b.distance); // Sort by distance
+        // Map to enhanced detection format
+        .map(pred => {
+          const bbox = pred.bbox as [number, number, number, number];
+          const inROI = isInROI(bbox, videoWidth, videoHeight);
+          const distance = estimateDistance(bbox[3], videoHeight, pred.class);
+          const positionX = (bbox[0] + bbox[2] / 2) / videoWidth;
+          const position = getRelativePosition(bbox, videoWidth);
+          
+          return {
+            class: pred.class,
+            score: pred.score,
+            bbox,
+            distance,
+            positionX,
+            position,
+            inROI
+          };
+        })
+        // CRITICAL: Only keep objects within the ROI (frontal zone)
+        .filter(det => det.inROI)
+        // Filter by minimum object size
+        .filter(det => isSignificantObject(det.bbox, videoWidth, videoHeight))
+        // Filter by maximum distance
+        .filter(det => det.distance <= DETECTION_CONFIG.MAX_DISTANCE)
+        // Sort by distance (closest first = highest priority)
+        .sort((a, b) => a.distance - b.distance);
 
       setDetections(filteredDetections);
     } catch (err) {
@@ -177,3 +247,6 @@ export function useObjectDetection(options: UseObjectDetectionOptions = {}): Use
     stopDetection
   };
 }
+
+// Export config for use in UI components
+export { DETECTION_CONFIG };

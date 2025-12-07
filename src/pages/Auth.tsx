@@ -3,7 +3,7 @@ import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { VisionLogo } from "@/components/icons/VisionLogo";
+import { CaminAILogo } from "@/components/icons/CaminAILogo";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { useToast } from "@/hooks/use-toast";
 import { useVoice } from "@/hooks/useVoice";
@@ -160,10 +160,10 @@ export default function Auth() {
           return;
         }
 
-        speak("¡Cuenta creada exitosamente! Bienvenido a Vision AI.");
+        speak("¡Cuenta creada exitosamente! Bienvenido a CaminAI.");
         toast({
           title: "¡Cuenta creada!",
-          description: "Bienvenido a Vision AI",
+          description: "Bienvenido a CaminAI",
         });
         navigate("/onboarding");
         
@@ -232,9 +232,9 @@ export default function Auth() {
     <MobileLayout className="flex flex-col justify-center py-8">
       {/* Logo Section */}
       <div className="flex flex-col items-center mb-8 animate-fade-in">
-        <VisionLogo size={80} className="mb-4" />
-        <h1 className="text-2xl font-bold text-foreground">VISION AI</h1>
-        <p className="text-muted-foreground text-sm mt-1">Tu asistente visual inteligente</p>
+        <CaminAILogo size={80} className="mb-4" />
+        <h1 className="text-2xl font-bold text-foreground">CaminAI</h1>
+        <p className="text-muted-foreground text-sm mt-1">Tu asistente de movilidad con IA</p>
       </div>
 
       {/* Form Card */}

@@ -126,7 +126,7 @@ export default function AnalyzePhoto() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Descripción de imagen - Vision AI',
+          title: 'Descripción de imagen - CaminAI',
           text: description
         });
       } catch (err) {

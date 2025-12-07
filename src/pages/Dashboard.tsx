@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { VisionLogo } from "@/components/icons/VisionLogo";
+import { CaminAILogo } from "@/components/icons/CaminAILogo";
 import { useVoice } from "@/hooks/useVoice";
 
 export default function Dashboard() {
@@ -46,9 +46,9 @@ export default function Dashboard() {
       {/* Header */}
       <header className="flex items-center justify-between mb-8 animate-fade-in">
         <div className="flex items-center gap-3">
-          <VisionLogo size={40} />
+          <CaminAILogo size={40} />
           <div>
-            <h1 className="text-lg font-semibold text-foreground">Vision AI</h1>
+            <h1 className="text-lg font-semibold text-foreground">CaminAI</h1>
             <p className="text-sm text-muted-foreground">¡Hola! ¿Qué necesitas?</p>
           </div>
         </div>

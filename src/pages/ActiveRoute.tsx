@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { AlertTriangle, StopCircle, Volume2, VolumeX, Loader2 } from "lucide-react";
+import { AlertTriangle, StopCircle, Volume2, VolumeX, Loader2, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useVoice } from "@/hooks/useVoice";
 import { useCamera } from "@/hooks/useCamera";
-import { useObjectDetection, Detection } from "@/hooks/useObjectDetection";
+import { useObjectDetection, Detection, DETECTION_CONFIG } from "@/hooks/useObjectDetection";
 
 export default function ActiveRoute() {
   const navigate = useNavigate();
@@ -17,6 +17,8 @@ export default function ActiveRoute() {
   const [isActive, setIsActive] = useState(false);
   const lastAnnouncedRef = useRef<string>("");
   const announceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAnnouncementTime = useRef<number>(0);
+  const ANNOUNCEMENT_INTERVAL = 2000; // Announce every 2 seconds max
 
   // Start camera on mount
   useEffect(() => {
@@ -36,7 +38,7 @@ export default function ActiveRoute() {
   // Start detection when camera and model are ready
   useEffect(() => {
     if (cameraReady && isModelLoaded && videoRef.current) {
-      speak("Cámara lista. Modelo de detección cargado. Analizando entorno en tiempo real.", { priority: true });
+      speak("Cámara lista. Modelo cargado. Detectando zona frontal: 2 metros adelante.", { priority: true });
       setIsActive(true);
       startDetection(videoRef.current);
     }
@@ -53,33 +55,38 @@ export default function ActiveRoute() {
   useEffect(() => {
     if (!audioEnabled || !isActive || detections.length === 0) return;
 
+    const now = Date.now();
+    if (now - lastAnnouncementTime.current < ANNOUNCEMENT_INTERVAL) return;
+
     const closest = detections[0];
-    const announcementKey = `${closest.class}-${closest.distance}`;
+    const announcementKey = `${closest.class}-${closest.distance}-${closest.position}`;
     
-    // Only announce if it's a different detection or significantly closer
+    // Only announce if it's a different detection
     if (announcementKey !== lastAnnouncedRef.current) {
       lastAnnouncedRef.current = announcementKey;
+      lastAnnouncementTime.current = now;
       
       // Clear previous timeout
       if (announceTimeoutRef.current) {
         clearTimeout(announceTimeoutRef.current);
       }
       
-      // Announce with delay to prevent spam
-      announceTimeoutRef.current = setTimeout(() => {
-        speakObstacle(closest.class, closest.distance, closest.positionX);
-        
-        // Vibration based on distance
-        if (navigator.vibrate) {
-          if (closest.distance <= 2) {
-            navigator.vibrate([200, 100, 200, 100, 200]);
-          } else if (closest.distance <= 5) {
-            navigator.vibrate([150, 100, 150]);
-          } else {
-            navigator.vibrate(100);
-          }
+      // Announce immediately
+      speakObstacle(closest.class, closest.distance, closest.positionX);
+      
+      // Vibration proportional to distance
+      if (navigator.vibrate) {
+        if (closest.distance < 1) {
+          // Very close - urgent pattern
+          navigator.vibrate([300, 100, 300, 100, 300]);
+        } else if (closest.distance < 2) {
+          // Medium distance - warning pattern
+          navigator.vibrate([200, 100, 200]);
+        } else {
+          // Farther - gentle notification
+          navigator.vibrate(150);
         }
-      }, 800);
+      }
     }
   }, [detections, audioEnabled, isActive, speakObstacle]);
 
@@ -98,8 +105,8 @@ export default function ActiveRoute() {
   };
 
   const getSeverityFromDistance = (distance: number): "low" | "medium" | "high" => {
-    if (distance <= 2) return "high";
-    if (distance <= 5) return "medium";
+    if (distance < 1) return "high";
+    if (distance < 2) return "medium";
     return "low";
   };
 
@@ -133,15 +140,17 @@ export default function ActiveRoute() {
       'backpack': 'Mochila',
       'umbrella': 'Paraguas',
       'handbag': 'Bolso',
-      'suitcase': 'Maleta'
+      'suitcase': 'Maleta',
+      'bench': 'Banca',
+      'stop sign': 'Señal de alto',
+      'traffic light': 'Semáforo',
+      'fire hydrant': 'Hidrante'
     };
     return labels[className.toLowerCase()] || className;
   };
 
-  const getDirectionLabel = (positionX: number): string => {
-    if (positionX < 0.33) return 'izquierda';
-    if (positionX > 0.66) return 'derecha';
-    return 'adelante';
+  const getDirectionLabel = (position: string): string => {
+    return position;
   };
 
   return (
@@ -188,10 +197,54 @@ export default function ActiveRoute() {
           </div>
         )}
 
+        {/* ROI Overlay - Visual guide for detection zone */}
+        {cameraReady && (
+          <div className="absolute inset-0 pointer-events-none z-5">
+            {/* Darkened areas outside ROI */}
+            <div 
+              className="absolute top-0 left-0 right-0 bg-black/30"
+              style={{ height: `${DETECTION_CONFIG.ROI.yStart * 100}%` }}
+            />
+            <div 
+              className="absolute bottom-0 left-0 right-0 bg-black/30"
+              style={{ height: `${(1 - DETECTION_CONFIG.ROI.yEnd) * 100}%` }}
+            />
+            <div 
+              className="absolute bg-black/30"
+              style={{ 
+                top: `${DETECTION_CONFIG.ROI.yStart * 100}%`,
+                bottom: `${(1 - DETECTION_CONFIG.ROI.yEnd) * 100}%`,
+                left: 0,
+                width: `${DETECTION_CONFIG.ROI.xStart * 100}%`
+              }}
+            />
+            <div 
+              className="absolute bg-black/30"
+              style={{ 
+                top: `${DETECTION_CONFIG.ROI.yStart * 100}%`,
+                bottom: `${(1 - DETECTION_CONFIG.ROI.yEnd) * 100}%`,
+                right: 0,
+                width: `${(1 - DETECTION_CONFIG.ROI.xEnd) * 100}%`
+              }}
+            />
+            
+            {/* ROI border */}
+            <div 
+              className="absolute border-2 border-dashed border-success/50 rounded-lg"
+              style={{ 
+                top: `${DETECTION_CONFIG.ROI.yStart * 100}%`,
+                bottom: `${(1 - DETECTION_CONFIG.ROI.yEnd) * 100}%`,
+                left: `${DETECTION_CONFIG.ROI.xStart * 100}%`,
+                right: `${(1 - DETECTION_CONFIG.ROI.xEnd) * 100}%`
+              }}
+            />
+          </div>
+        )}
+
         {/* Bounding boxes overlay */}
         {cameraReady && videoRef.current && (
           <svg 
-            className="absolute inset-0 w-full h-full pointer-events-none z-5"
+            className="absolute inset-0 w-full h-full pointer-events-none z-6"
             viewBox={`0 0 ${videoRef.current.videoWidth || 1280} ${videoRef.current.videoHeight || 720}`}
             preserveAspectRatio="xMidYMid slice"
           >
@@ -214,7 +267,7 @@ export default function ActiveRoute() {
                   <rect
                     x={det.bbox[0]}
                     y={det.bbox[1] - 32}
-                    width={Math.max(det.bbox[2], 120)}
+                    width={Math.max(det.bbox[2], 140)}
                     height="28"
                     fill={strokeColor}
                     rx="4"
@@ -223,10 +276,10 @@ export default function ActiveRoute() {
                     x={det.bbox[0] + 8}
                     y={det.bbox[1] - 12}
                     fill="#FFFFFF"
-                    fontSize="16"
+                    fontSize="14"
                     fontWeight="bold"
                   >
-                    {getObjectLabel(det.class)} • {det.distance}m
+                    {getObjectLabel(det.class)} • {det.distance}m • {det.position}
                   </text>
                 </g>
               );
@@ -241,7 +294,7 @@ export default function ActiveRoute() {
               <>
                 <div className="w-3 h-3 rounded-full bg-success animate-pulse" />
                 <span className="text-sm font-medium text-foreground">
-                  Detectando... ({detections.length} objetos)
+                  Zona frontal ({detections.length} objetos)
                 </span>
               </>
             ) : (
@@ -267,10 +320,10 @@ export default function ActiveRoute() {
           </Button>
         </div>
 
-        {/* Detection alerts */}
+        {/* Detection alerts - Only show top 2 closest */}
         {isActive && detections.length > 0 && (
           <div className="absolute top-20 left-4 right-4 space-y-2 z-20">
-            {detections.slice(0, 3).map((detection, index) => {
+            {detections.slice(0, 2).map((detection, index) => {
               const severity = getSeverityFromDistance(detection.distance);
               return (
                 <div
@@ -288,7 +341,7 @@ export default function ActiveRoute() {
                       {getObjectLabel(detection.class)}
                     </p>
                     <p className="text-sm opacity-80">
-                      {detection.distance}m • {getDirectionLabel(detection.positionX)}
+                      {detection.distance < 1 ? 'Muy cerca' : `${detection.distance}m`} • {getDirectionLabel(detection.position)}
                     </p>
                   </div>
                 </div>
@@ -299,10 +352,13 @@ export default function ActiveRoute() {
 
         {/* All clear message */}
         {isActive && detections.length === 0 && (
-          <div className="absolute bottom-32 left-4 right-4 z-20">
-            <div className="px-4 py-3 rounded-2xl bg-success/20 border-2 border-success text-success text-center">
-              <p className="font-semibold text-lg">Todo despejado</p>
-              <p className="text-sm opacity-80">No se detectan obstáculos cercanos</p>
+          <div className="absolute top-20 left-4 right-4 z-20">
+            <div className="px-4 py-3 rounded-2xl bg-success/20 border-2 border-success text-success flex items-center gap-3">
+              <CheckCircle2 className="w-6 h-6 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-lg">Zona despejada</p>
+                <p className="text-sm opacity-80">No hay obstáculos en tu camino</p>
+              </div>
             </div>
           </div>
         )}

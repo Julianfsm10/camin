@@ -2,8 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Vision AI Design System - Mobile-First, Accessibility-First */
-
+/* CaminAI Design System - Mobile-First, Accessibility-First */
 @layer base {
   :root {
     /* Core backgrounds - Deep navy tones */
