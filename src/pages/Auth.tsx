@@ -8,6 +8,8 @@ import { MobileLayout } from "@/components/layout/MobileLayout";
 import { useToast } from "@/hooks/use-toast";
 import { useVoice } from "@/hooks/useVoice";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import type { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
 type AuthMode = "login" | "register" | "forgot";
 
@@ -17,6 +19,7 @@ export default function Auth() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { speak } = useVoice();
@@ -26,6 +29,30 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
+
+  // Check for existing session and listen for auth changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        if (session?.user) {
+          // Defer navigation to avoid deadlock
+          setTimeout(() => {
+            navigate("/dashboard");
+          }, 0);
+        }
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        navigate("/dashboard");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   // Announce page on mount and mode change
   useEffect(() => {
@@ -47,40 +74,129 @@ export default function Auth() {
     setIsLoading(true);
     speak("Procesando", { priority: true });
 
-    // Simulate auth delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    if (mode === "login") {
-      speak("¡Bienvenido de vuelta! Iniciando sesión.");
-      toast({
-        title: "¡Bienvenido de vuelta!",
-        description: "Iniciando sesión...",
-      });
-      navigate("/dashboard");
-    } else if (mode === "register") {
-      if (password !== confirmPassword) {
-        speak("Error: Las contraseñas no coinciden.");
-        toast({
-          title: "Las contraseñas no coinciden",
-          description: "Por favor, verifica que las contraseñas sean iguales",
-          variant: "destructive",
+    try {
+      if (mode === "login") {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
         });
-        setIsLoading(false);
-        return;
+
+        if (error) {
+          let errorMessage = "Error al iniciar sesión";
+          if (error.message.includes("Invalid login credentials")) {
+            errorMessage = "Email o contraseña incorrectos";
+          } else if (error.message.includes("Email not confirmed")) {
+            errorMessage = "Por favor confirma tu email antes de iniciar sesión";
+          }
+          
+          speak(`Error: ${errorMessage}`);
+          toast({
+            title: "Error de autenticación",
+            description: errorMessage,
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        speak("¡Bienvenido de vuelta! Iniciando sesión.");
+        toast({
+          title: "¡Bienvenido de vuelta!",
+          description: "Iniciando sesión...",
+        });
+        // Navigation handled by auth state listener
+        
+      } else if (mode === "register") {
+        if (password !== confirmPassword) {
+          speak("Error: Las contraseñas no coinciden.");
+          toast({
+            title: "Las contraseñas no coinciden",
+            description: "Por favor, verifica que las contraseñas sean iguales",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        if (password.length < 6) {
+          speak("Error: La contraseña debe tener al menos 6 caracteres.");
+          toast({
+            title: "Contraseña muy corta",
+            description: "La contraseña debe tener al menos 6 caracteres",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        const redirectUrl = `${window.location.origin}/`;
+        
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: redirectUrl,
+            data: {
+              full_name: name,
+            }
+          }
+        });
+
+        if (error) {
+          let errorMessage = "Error al crear la cuenta";
+          if (error.message.includes("User already registered")) {
+            errorMessage = "Este email ya está registrado. Intenta iniciar sesión.";
+          } else if (error.message.includes("Invalid email")) {
+            errorMessage = "El email ingresado no es válido";
+          }
+          
+          speak(`Error: ${errorMessage}`);
+          toast({
+            title: "Error de registro",
+            description: errorMessage,
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        speak("¡Cuenta creada exitosamente! Bienvenido a Vision AI.");
+        toast({
+          title: "¡Cuenta creada!",
+          description: "Bienvenido a Vision AI",
+        });
+        navigate("/onboarding");
+        
+      } else if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth`,
+        });
+
+        if (error) {
+          speak("Error al enviar el correo de recuperación.");
+          toast({
+            title: "Error",
+            description: "No se pudo enviar el correo de recuperación",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        speak("Correo de recuperación enviado. Revisa tu bandeja de entrada.");
+        toast({
+          title: "Correo enviado",
+          description: "Revisa tu bandeja de entrada para restablecer tu contraseña",
+        });
+        setMode("login");
       }
-      speak("¡Cuenta creada exitosamente! Bienvenido a Vision AI.");
+    } catch (error) {
+      speak("Error inesperado. Por favor intenta de nuevo.");
       toast({
-        title: "¡Cuenta creada!",
-        description: "Bienvenido a Vision AI",
+        title: "Error",
+        description: "Ocurrió un error inesperado. Por favor intenta de nuevo.",
+        variant: "destructive",
       });
-      navigate("/onboarding");
-    } else if (mode === "forgot") {
-      speak("Correo de recuperación enviado. Revisa tu bandeja de entrada.");
-      toast({
-        title: "Correo enviado",
-        description: "Revisa tu bandeja de entrada para restablecer tu contraseña",
-      });
-      setMode("login");
     }
 
     setIsLoading(false);
