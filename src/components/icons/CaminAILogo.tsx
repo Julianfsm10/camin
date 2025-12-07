@@ -12,86 +12,13 @@ export function CaminAILogo({ className, size = 60 }: CaminAILogoProps) {
       aria-label="CaminAI Logo"
     >
       <svg
-        viewBox="0 0 100 100"
+        viewBox="0 0 1080 1080"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className="w-full h-full"
       >
-        <defs>
-          <linearGradient id="caminai-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--primary))" />
-            <stop offset="100%" stopColor="hsl(var(--primary) / 0.7)" />
-          </linearGradient>
-          <linearGradient id="caminai-path" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="hsl(var(--success))" />
-            <stop offset="100%" stopColor="hsl(var(--primary))" />
-          </linearGradient>
-        </defs>
-        
-        {/* Base circle */}
-        <circle 
-          cx="50" 
-          cy="50" 
-          r="45" 
-          fill="url(#caminai-gradient)" 
-          opacity="0.15"
-        />
-        
-        {/* Path/road representation */}
         <path
-          d="M30 75 Q50 45 70 25"
-          stroke="url(#caminai-path)"
-          strokeWidth="6"
-          strokeLinecap="round"
-          fill="none"
-        />
-        
-        {/* Walking cane icon */}
-        <path
-          d="M55 20 L55 65 Q55 72 48 72 L45 72"
-          stroke="hsl(var(--foreground))"
-          strokeWidth="5"
-          strokeLinecap="round"
-          fill="none"
-        />
-        
-        {/* AI detection waves */}
-        <circle 
-          cx="55" 
-          cy="40" 
-          r="12" 
-          fill="none"
-          stroke="hsl(var(--primary))"
-          strokeWidth="2"
-          strokeDasharray="4 2"
-          opacity="0.6"
-        />
-        <circle 
-          cx="55" 
-          cy="40" 
-          r="20" 
-          fill="none"
-          stroke="hsl(var(--primary))"
-          strokeWidth="1.5"
-          strokeDasharray="6 3"
-          opacity="0.4"
-        />
-        <circle 
-          cx="55" 
-          cy="40" 
-          r="28" 
-          fill="none"
-          stroke="hsl(var(--primary))"
-          strokeWidth="1"
-          strokeDasharray="8 4"
-          opacity="0.2"
-        />
-        
-        {/* AI dot */}
-        <circle 
-          cx="55" 
-          cy="40" 
-          r="4" 
+          d="M262.242 317.692C251.607 333.022 255.413 354.072 270.743 364.707C286.074 375.342 307.123 371.536 317.758 356.205L290 336.949L262.242 317.692ZM762.242 356.205C772.877 371.536 793.926 375.342 809.257 364.707C824.587 354.072 828.393 333.022 817.758 317.692L790 336.949L762.242 356.205ZM762.973 651.946H729.189C729.189 752.701 647.511 834.378 546.757 834.378V868.162V901.946C684.828 901.946 796.757 790.017 796.757 651.946H762.973ZM546.757 868.162V834.378C446.002 834.378 364.324 752.701 364.324 651.946H330.541H296.757C296.757 790.017 408.686 901.946 546.757 901.946V868.162ZM330.541 651.946H364.324C364.324 551.191 446.002 469.514 546.757 469.514V435.73V401.946C408.686 401.946 296.757 513.875 296.757 651.946H330.541ZM546.757 435.73V469.514C647.511 469.514 729.189 551.191 729.189 651.946H762.973H796.757C796.757 513.875 684.828 401.946 546.757 401.946V435.73ZM290 874.919V908.703H790V874.919V841.135H290V874.919ZM290 336.949L317.758 356.205C366.612 285.783 447.937 239.784 540 239.784V206V172.216C424.856 172.216 323.18 229.851 262.242 317.692L290 336.949ZM540 206V239.784C632.063 239.784 713.388 285.783 762.242 356.205L790 336.949L817.758 317.692C756.82 229.851 655.144 172.216 540 172.216V206Z"
           fill="hsl(var(--primary))"
         />
       </svg>
