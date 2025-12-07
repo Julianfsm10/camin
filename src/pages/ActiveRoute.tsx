@@ -1,24 +1,30 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { AlertTriangle, StopCircle, Volume2, VolumeX, Loader2, CheckCircle2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { AlertTriangle, StopCircle, Volume2, VolumeX, Loader2, CheckCircle2, ArrowDownFromLine, AlertOctagon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useVoice } from "@/hooks/useVoice";
 import { useCamera } from "@/hooks/useCamera";
-import { useObjectDetection, Detection, DETECTION_CONFIG } from "@/hooks/useObjectDetection";
+import { useHybridDetection, DETECTION_CONFIG, EnhancedDetection } from "@/hooks/useHybridDetection";
 
 export default function ActiveRoute() {
   const navigate = useNavigate();
-  const { speak, speakObstacle, stop: stopSpeech } = useVoice();
+  const { speak, stop: stopSpeech } = useVoice();
   const { videoRef, isReady: cameraReady, error: cameraError, startCamera, stopCamera } = useCamera();
-  const { isModelLoaded, isLoading: modelLoading, detections, startDetection, stopDetection } = useObjectDetection();
+  const { 
+    isModelLoaded, 
+    isLoading: modelLoading, 
+    detections, 
+    startDetection, 
+    stopDetection,
+    canvasRef 
+  } = useHybridDetection({ levelDetectionEnabled: true });
   
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [isActive, setIsActive] = useState(false);
   const lastAnnouncedRef = useRef<string>("");
-  const announceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastAnnouncementTime = useRef<number>(0);
-  const ANNOUNCEMENT_INTERVAL = 2000; // Announce every 2 seconds max
+  const ANNOUNCEMENT_INTERVAL = 1800; // Slightly faster for critical alerts
 
   // Start camera on mount
   useEffect(() => {
@@ -29,16 +35,13 @@ export default function ActiveRoute() {
       stopCamera();
       stopDetection();
       stopSpeech();
-      if (announceTimeoutRef.current) {
-        clearTimeout(announceTimeoutRef.current);
-      }
     };
   }, []);
 
   // Start detection when camera and model are ready
   useEffect(() => {
     if (cameraReady && isModelLoaded && videoRef.current) {
-      speak("Cámara lista. Modelo cargado. Detectando zona frontal: 2 metros adelante.", { priority: true });
+      speak("Cámara lista. Detección híbrida activa. Analizando obstáculos, escaleras y desniveles.", { priority: true });
       setIsActive(true);
       startDetection(videoRef.current);
     }
@@ -51,44 +54,92 @@ export default function ActiveRoute() {
     }
   }, [cameraError]);
 
-  // Announce detections with throttling
+  // Announce detections with throttling and type-specific messages
   useEffect(() => {
     if (!audioEnabled || !isActive || detections.length === 0) return;
 
     const now = Date.now();
-    if (now - lastAnnouncementTime.current < ANNOUNCEMENT_INTERVAL) return;
+    
+    // Critical alerts bypass normal throttling
+    const hasCritical = detections.some(d => d.priority === 'critical');
+    const interval = hasCritical ? 1200 : ANNOUNCEMENT_INTERVAL;
+    
+    if (now - lastAnnouncementTime.current < interval) return;
 
-    const closest = detections[0];
-    const announcementKey = `${closest.class}-${closest.distance}-${closest.position}`;
+    const detection = detections[0];
+    const announcementKey = `${detection.type}-${detection.label}-${Math.round(detection.distance)}`;
     
     // Only announce if it's a different detection
     if (announcementKey !== lastAnnouncedRef.current) {
       lastAnnouncedRef.current = announcementKey;
       lastAnnouncementTime.current = now;
       
-      // Clear previous timeout
-      if (announceTimeoutRef.current) {
-        clearTimeout(announceTimeoutRef.current);
-      }
+      // Build announcement based on detection type
+      const announcement = buildAnnouncement(detection);
+      speak(announcement, { priority: detection.priority === 'critical' });
       
-      // Announce immediately
-      speakObstacle(closest.class, closest.distance, closest.positionX);
-      
-      // Vibration proportional to distance
-      if (navigator.vibrate) {
-        if (closest.distance < 1) {
-          // Very close - urgent pattern
+      // Type-specific vibration patterns
+      triggerVibration(detection);
+    }
+  }, [detections, audioEnabled, isActive, speak]);
+
+  // Build announcement message based on detection type
+  const buildAnnouncement = (detection: EnhancedDetection): string => {
+    const distanceText = detection.distance < 1 ? 'muy cerca' : `${detection.distance} metros`;
+    const posText = detection.position === 'centro' ? 'adelante' : detection.position;
+    
+    switch (detection.type) {
+      case 'stair_down':
+        return `PELIGRO: ${detection.label} ${posText}. Detente.`;
+      case 'stair_up':
+        return `Cuidado: ${detection.label} ${posText}, ${distanceText}.`;
+      case 'curb':
+        return `ALERTA: ${detection.label} ${posText}. Cuidado con el desnivel.`;
+      case 'fence':
+        return `${detection.label} ${posText}, ${distanceText}.`;
+      case 'unknown_obstacle':
+        return `${detection.label} ${posText}, ${distanceText}.`;
+      default:
+        return `${detection.label} ${posText}, ${distanceText}.`;
+    }
+  };
+
+  // Trigger vibration based on detection type and priority
+  const triggerVibration = (detection: EnhancedDetection) => {
+    if (!navigator.vibrate) return;
+    
+    switch (detection.type) {
+      case 'stair_down':
+        // Urgent stair down - long repeating pattern
+        navigator.vibrate([500, 150, 500, 150, 500, 150, 500]);
+        break;
+      case 'curb':
+        // Curb alert - urgent pattern
+        navigator.vibrate([400, 100, 400, 100, 400]);
+        break;
+      case 'stair_up':
+        // Stair up - warning pattern
+        navigator.vibrate([300, 150, 300]);
+        break;
+      case 'fence':
+        // Fence - simple notification
+        navigator.vibrate(200);
+        break;
+      case 'unknown_obstacle':
+        // Unknown - warning pattern
+        navigator.vibrate([300, 100, 300]);
+        break;
+      default:
+        // Known objects - distance-based
+        if (detection.distance < 1) {
           navigator.vibrate([300, 100, 300, 100, 300]);
-        } else if (closest.distance < 2) {
-          // Medium distance - warning pattern
+        } else if (detection.distance < 2) {
           navigator.vibrate([200, 100, 200]);
         } else {
-          // Farther - gentle notification
           navigator.vibrate(150);
         }
-      }
     }
-  }, [detections, audioEnabled, isActive, speakObstacle]);
+  };
 
   const handleStop = () => {
     speak("Recorrido detenido", { priority: true });
@@ -104,53 +155,38 @@ export default function ActiveRoute() {
     speak(newState ? "Audio activado" : "Audio desactivado", { priority: true });
   };
 
-  const getSeverityFromDistance = (distance: number): "low" | "medium" | "high" => {
-    if (distance < 1) return "high";
-    if (distance < 2) return "medium";
-    return "low";
-  };
-
-  const getSeverityColor = (severity: "low" | "medium" | "high") => {
-    switch (severity) {
+  const getPriorityColor = (priority: EnhancedDetection['priority']) => {
+    switch (priority) {
+      case "critical":
+        return "border-destructive bg-destructive/20 text-destructive animate-pulse";
       case "high":
-        return "border-destructive bg-destructive/20 text-destructive";
-      case "medium":
         return "border-warning bg-warning/20 text-warning";
+      case "medium":
+        return "border-info bg-info/20 text-info";
       case "low":
         return "border-success bg-success/20 text-success";
     }
   };
 
-  const getObjectLabel = (className: string): string => {
-    const labels: Record<string, string> = {
-      'person': 'Persona',
-      'car': 'Auto',
-      'truck': 'Camión',
-      'bus': 'Autobús',
-      'bicycle': 'Bicicleta',
-      'motorcycle': 'Moto',
-      'dog': 'Perro',
-      'cat': 'Gato',
-      'chair': 'Silla',
-      'couch': 'Sofá',
-      'potted plant': 'Planta',
-      'dining table': 'Mesa',
-      'bottle': 'Botella',
-      'cup': 'Taza',
-      'backpack': 'Mochila',
-      'umbrella': 'Paraguas',
-      'handbag': 'Bolso',
-      'suitcase': 'Maleta',
-      'bench': 'Banca',
-      'stop sign': 'Señal de alto',
-      'traffic light': 'Semáforo',
-      'fire hydrant': 'Hidrante'
-    };
-    return labels[className.toLowerCase()] || className;
+  const getDetectionIcon = (type: EnhancedDetection['type']) => {
+    switch (type) {
+      case 'stair_down':
+      case 'stair_up':
+        return <ArrowDownFromLine className="w-6 h-6 flex-shrink-0" />;
+      case 'curb':
+        return <AlertOctagon className="w-6 h-6 flex-shrink-0" />;
+      default:
+        return <AlertTriangle className="w-6 h-6 flex-shrink-0" />;
+    }
   };
 
-  const getDirectionLabel = (position: string): string => {
-    return position;
+  const getTypeLabel = (detection: EnhancedDetection): string => {
+    if (detection.type === 'stair_down') return '🚨 ESCALERA BAJANDO';
+    if (detection.type === 'stair_up') return '⚠️ Escalera subiendo';
+    if (detection.type === 'curb') return '🚨 DESNIVEL';
+    if (detection.type === 'fence') return 'Reja/Baranda';
+    if (detection.type === 'unknown_obstacle') return '⚠️ Obstáculo';
+    return detection.label;
   };
 
   return (
@@ -164,6 +200,14 @@ export default function ActiveRoute() {
           playsInline
           muted
           className="absolute inset-0 w-full h-full object-cover"
+        />
+        
+        {/* Hidden canvas for image processing */}
+        <canvas
+          ref={canvasRef}
+          className="hidden"
+          width={1280}
+          height={720}
         />
 
         {/* Loading overlay */}
@@ -248,38 +292,41 @@ export default function ActiveRoute() {
             viewBox={`0 0 ${videoRef.current.videoWidth || 1280} ${videoRef.current.videoHeight || 720}`}
             preserveAspectRatio="xMidYMid slice"
           >
-            {detections.map((det, i) => {
-              const severity = getSeverityFromDistance(det.distance);
-              const strokeColor = severity === 'high' ? '#EF4444' : severity === 'medium' ? '#F59E0B' : '#10B981';
+            {detections.filter(det => det.bbox).map((det, i) => {
+              const strokeColor = det.priority === 'critical' ? '#EF4444' : 
+                                  det.priority === 'high' ? '#F59E0B' : 
+                                  det.priority === 'medium' ? '#6366F1' : '#10B981';
+              const bbox = det.bbox!;
               
               return (
                 <g key={i}>
                   <rect
-                    x={det.bbox[0]}
-                    y={det.bbox[1]}
-                    width={det.bbox[2]}
-                    height={det.bbox[3]}
+                    x={bbox[0]}
+                    y={bbox[1]}
+                    width={bbox[2]}
+                    height={bbox[3]}
                     fill="none"
                     stroke={strokeColor}
                     strokeWidth="4"
                     rx="8"
+                    className={det.priority === 'critical' ? 'animate-pulse' : ''}
                   />
                   <rect
-                    x={det.bbox[0]}
-                    y={det.bbox[1] - 32}
-                    width={Math.max(det.bbox[2], 140)}
+                    x={bbox[0]}
+                    y={bbox[1] - 32}
+                    width={Math.max(bbox[2], 160)}
                     height="28"
                     fill={strokeColor}
                     rx="4"
                   />
                   <text
-                    x={det.bbox[0] + 8}
-                    y={det.bbox[1] - 12}
+                    x={bbox[0] + 8}
+                    y={bbox[1] - 12}
                     fill="#FFFFFF"
                     fontSize="14"
                     fontWeight="bold"
                   >
-                    {getObjectLabel(det.class)} • {det.distance}m • {det.position}
+                    {det.label} • {det.distance}m • {det.position}
                   </text>
                 </g>
               );
@@ -320,33 +367,30 @@ export default function ActiveRoute() {
           </Button>
         </div>
 
-        {/* Detection alerts - Only show top 2 closest */}
+        {/* Detection alerts - Show top 3 with priority styling */}
         {isActive && detections.length > 0 && (
           <div className="absolute top-20 left-4 right-4 space-y-2 z-20">
-            {detections.slice(0, 2).map((detection, index) => {
-              const severity = getSeverityFromDistance(detection.distance);
-              return (
-                <div
-                  key={index}
-                  className={cn(
-                    "px-4 py-3 rounded-2xl border-2 backdrop-blur-sm animate-fade-in flex items-center gap-3",
-                    getSeverityColor(severity)
-                  )}
-                  role="alert"
-                  aria-live="assertive"
-                >
-                  <AlertTriangle className="w-6 h-6 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="font-semibold text-lg">
-                      {getObjectLabel(detection.class)}
-                    </p>
-                    <p className="text-sm opacity-80">
-                      {detection.distance < 1 ? 'Muy cerca' : `${detection.distance}m`} • {getDirectionLabel(detection.position)}
-                    </p>
-                  </div>
+            {detections.slice(0, 3).map((detection, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "px-4 py-3 rounded-2xl border-2 backdrop-blur-sm animate-fade-in flex items-center gap-3",
+                  getPriorityColor(detection.priority)
+                )}
+                role="alert"
+                aria-live={detection.priority === 'critical' ? 'assertive' : 'polite'}
+              >
+                {getDetectionIcon(detection.type)}
+                <div className="flex-1">
+                  <p className="font-semibold text-lg">
+                    {getTypeLabel(detection)}
+                  </p>
+                  <p className="text-sm opacity-80">
+                    {detection.distance < 1 ? 'Muy cerca' : `${detection.distance}m`} • {detection.position === 'centro' ? 'adelante' : detection.position}
+                  </p>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
 
