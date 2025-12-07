@@ -5,14 +5,132 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface UserContext {
+  foodAllergies: string[];
+  foodAllergiesOther: string;
+  medicalConditions: string[];
+  medicalConditionsOther: string;
+  dietaryPreferences: string[];
+  dietaryPreferencesOther: string;
+  dislikedFoods: string;
+  gender: string;
+  genderOther: string;
+  age: number | null;
+}
+
+function buildPersonalizedPrompt(userContext: UserContext | null): string {
+  let prompt = `Eres un asistente visual para personas ciegas o con discapacidad visual. Analiza esta imagen y proporciona información clara y útil.
+
+## TU TAREA
+1. Describe detalladamente qué hay en la imagen
+2. Lee cualquier texto visible
+3. Identifica posibles riesgos basados en el perfil del usuario
+`;
+
+  if (userContext) {
+    prompt += `\n## INFORMACIÓN DEL USUARIO\n`;
+
+    // Food allergies
+    const hasAllergies = userContext.foodAllergies?.length > 0 && 
+      !userContext.foodAllergies.includes('ninguna');
+    
+    if (hasAllergies || userContext.foodAllergiesOther) {
+      const allergies = [...(userContext.foodAllergies?.filter(a => a !== 'ninguna') || [])];
+      if (userContext.foodAllergiesOther) {
+        allergies.push(userContext.foodAllergiesOther);
+      }
+      prompt += `- ⚠️ ALERGIAS ALIMENTARIAS: ${allergies.join(', ')}\n`;
+      prompt += `  → Si hay alimentos, VERIFICA si contienen estos alérgenos\n`;
+    }
+
+    // Medical conditions
+    const hasConditions = userContext.medicalConditions?.length > 0 && 
+      !userContext.medicalConditions.includes('ninguna');
+    
+    if (hasConditions || userContext.medicalConditionsOther) {
+      const conditions = [...(userContext.medicalConditions?.filter(c => c !== 'ninguna') || [])];
+      if (userContext.medicalConditionsOther) {
+        conditions.push(userContext.medicalConditionsOther);
+      }
+      prompt += `- 🏥 CONDICIONES MÉDICAS: ${conditions.join(', ')}\n`;
+      prompt += `  → Si hay alimentos o medicamentos, considera estas condiciones\n`;
+    }
+
+    // Dietary preferences
+    const hasPreferences = userContext.dietaryPreferences?.length > 0 && 
+      !userContext.dietaryPreferences.includes('ninguna');
+    
+    if (hasPreferences || userContext.dietaryPreferencesOther) {
+      const prefs = [...(userContext.dietaryPreferences?.filter(p => p !== 'ninguna') || [])];
+      if (userContext.dietaryPreferencesOther) {
+        prefs.push(userContext.dietaryPreferencesOther);
+      }
+      prompt += `- 🥗 PREFERENCIAS ALIMENTARIAS: ${prefs.join(', ')}\n`;
+      prompt += `  → Si hay comida, indica si es compatible con estas preferencias\n`;
+    }
+
+    // Disliked foods
+    if (userContext.dislikedFoods) {
+      prompt += `- 👎 NO LE GUSTAN: ${userContext.dislikedFoods}\n`;
+    }
+
+    // Gender (for bathrooms)
+    if (userContext.gender && userContext.gender !== 'prefiero_no_decir') {
+      let genderText = '';
+      if (userContext.gender === 'femenino' || userContext.gender === 'mujer') {
+        genderText = 'mujer';
+      } else if (userContext.gender === 'masculino' || userContext.gender === 'hombre') {
+        genderText = 'hombre';
+      } else if (userContext.gender === 'otro' && userContext.genderOther) {
+        genderText = userContext.genderOther;
+      } else if (userContext.gender === 'otro') {
+        genderText = 'persona no binaria';
+      }
+      
+      if (genderText) {
+        prompt += `- 🚻 GÉNERO: ${genderText}\n`;
+        prompt += `  → Si es un baño público, indica si es el apropiado\n`;
+      }
+    }
+  }
+
+  prompt += `
+## REGLAS DE ALERTAS
+- CRÍTICO (type: "critical"): Alérgenos detectados, peligros inmediatos
+- ADVERTENCIA (type: "warning"): Incompatibilidad con condiciones médicas, baño incorrecto
+- INFORMACIÓN (type: "info"): Preferencias no cumplidas, información útil
+
+## FORMATO DE RESPUESTA
+Responde SOLO con un JSON válido (sin texto adicional ni bloques de código):
+{
+  "description": "Descripción completa y clara de la imagen en español",
+  "alerts": [
+    {
+      "type": "critical" | "warning" | "info",
+      "category": "alergia" | "condicion_medica" | "preferencia" | "genero" | "seguridad" | "otro",
+      "message": "Mensaje claro y directo de la alerta"
+    }
+  ],
+  "safeToConsume": true | false | null,
+  "recommendations": ["recomendación 1", "recomendación 2"]
+}
+
+NOTAS:
+- "safeToConsume" solo aplica si hay alimentos/bebidas/medicamentos en la imagen, de lo contrario usa null
+- Si no hay alertas, devuelve un array vacío []
+- Sé específico y directo en las descripciones
+- Prioriza la seguridad del usuario`;
+
+  return prompt;
+}
+
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { imageBase64 } = await req.json();
+    const { imageBase64, userContext } = await req.json();
 
     if (!imageBase64) {
       return new Response(
@@ -29,10 +147,11 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Clean base64 data (remove data URL prefix if present)
     const base64Data = imageBase64.includes(',') 
       ? imageBase64.split(',')[1] 
       : imageBase64;
+
+    const personalizedPrompt = buildPersonalizedPrompt(userContext || null);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -44,20 +163,6 @@ serve(async (req) => {
         model: "google/gemini-2.5-flash",
         messages: [
           {
-            role: "system",
-            content: `Eres un asistente de accesibilidad para personas con discapacidad visual. Tu trabajo es describir imágenes de manera clara, detallada y útil.
-
-Reglas para la descripción:
-1. Describe primero los elementos más importantes (personas, objetos principales, texto visible)
-2. Incluye colores, tamaños relativos y posiciones espaciales
-3. Menciona cualquier texto visible en la imagen
-4. Describe el contexto general (interior/exterior, iluminación, ambiente)
-5. Usa un lenguaje natural y amigable en español
-6. Sé conciso pero informativo (3-5 oraciones)
-7. Si hay personas, describe su postura, vestimenta y actividad (sin identificar individuos)
-8. Menciona posibles obstáculos o elementos de seguridad si son relevantes`
-          },
-          {
             role: "user",
             content: [
               {
@@ -68,12 +173,12 @@ Reglas para la descripción:
               },
               {
                 type: "text",
-                text: "Describe esta imagen detalladamente para una persona ciega. Incluye objetos, personas, colores, texto visible y el contexto espacial."
+                text: personalizedPrompt
               }
             ]
           }
         ],
-        max_tokens: 500
+        max_tokens: 1500
       }),
     });
 
@@ -105,10 +210,39 @@ Reglas para la descripción:
     }
 
     const data = await response.json();
-    const description = data.choices?.[0]?.message?.content || "No se pudo generar una descripción.";
+    const responseText = data.choices?.[0]?.message?.content || "";
+
+    // Try to parse as JSON
+    let analysis;
+    try {
+      // Extract JSON from response (might have extra text)
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        analysis = JSON.parse(jsonMatch[0]);
+      } else {
+        // Fallback if not JSON
+        analysis = {
+          description: responseText,
+          alerts: [],
+          safeToConsume: null,
+          recommendations: []
+        };
+      }
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError);
+      analysis = {
+        description: responseText,
+        alerts: [],
+        safeToConsume: null,
+        recommendations: []
+      };
+    }
 
     return new Response(
-      JSON.stringify({ description }),
+      JSON.stringify({ 
+        analysis,
+        description: analysis.description // Keep backward compatibility
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
