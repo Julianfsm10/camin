@@ -58,7 +58,9 @@ export default function Profile() {
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [highContrast, setHighContrast] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [userName, setUserName] = useState<string>("");
+  
   const handleLogout = async () => {
     setIsLoggingOut(true);
     speak("Cerrando sesión");
@@ -80,6 +82,24 @@ export default function Profile() {
   };
 
   useEffect(() => {
+      const fetchUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email || "");
+        // Try to get name from user metadata, fallback to email username
+        const fullName = user.user_metadata?.full_name || user.user_metadata?.name;
+        if (fullName) {
+          setUserName(fullName);
+        } else if (user.email) {
+          // Extract username from email as fallback
+          setUserName(user.email.split('@')[0]);
+        }
+      }
+    };
+
+    fetchUserData();
+
+    
     const timer = setTimeout(() => {
       speak("Pantalla de perfil y configuración. Ajusta tus preferencias de accesibilidad.");
     }, 500);
@@ -100,8 +120,8 @@ export default function Profile() {
             <User className="w-8 h-8 text-primary" />
           </div>
           <div className="flex-1">
-            <h2 className="text-xl font-semibold text-foreground">Usuario</h2>
-            <p className="text-muted-foreground">usuario@email.com</p>
+            <h2 className="text-xl font-semibold text-foreground">{userName || "Usuario"}</h2>
+            <p className="text-muted-foreground">{userEmail || "usuario@email.com"}</p>
           </div>
         </div>
 
