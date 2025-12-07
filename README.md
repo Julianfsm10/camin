@@ -4,7 +4,7 @@
 
 > "Lo que ves, yo lo siento y describo"
 
-Camina AI transforma cualquier smartphone en ojos de IA, proporcionando navegación instantánea y asistencia visual para personas con discapacidad visual. No es una app que instalas, es una experiencia web progresiva (PWA) que abres en tu navegador.
+Camin AI transforma cualquier smartphone en ojos de IA, proporcionando navegación instantánea y asistencia visual para personas con discapacidad visual. No es una app que instalas, es una experiencia web progresiva (PWA) que abres en tu navegador.
 
 ---
 
