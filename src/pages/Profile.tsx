@@ -7,7 +7,8 @@ import { MobileLayout } from "@/components/layout/MobileLayout";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Header } from "@/components/layout/Header";
 import { useVoice } from "@/hooks/useVoice";
-import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface SettingItemProps {
   icon: React.ReactNode;
@@ -52,9 +53,31 @@ function SettingItem({ icon, label, description, onClick, toggle, checked, onChe
 export default function Profile() {
   const navigate = useNavigate();
   const { speak } = useVoice();
+  const { toast } = useToast();
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [highContrast, setHighContrast] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    speak("Cerrando sesión");
+    
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      speak("Error al cerrar sesión");
+      toast({
+        title: "Error",
+        description: "No se pudo cerrar sesión. Intenta de nuevo.",
+        variant: "destructive",
+      });
+      setIsLoggingOut(false);
+      return;
+    }
+    
+    navigate("/auth");
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -109,9 +132,15 @@ export default function Profile() {
           </section>
         </div>
 
-        <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 min-h-[56px]" onClick={() => { speak("Cerrando sesión"); navigate("/auth"); }} onMouseEnter={() => speak("Botón cerrar sesión")}>
+        <Button 
+          variant="ghost" 
+          className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 min-h-[56px]" 
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          onMouseEnter={() => speak("Botón cerrar sesión")}
+        >
           <LogOut className="w-5 h-5 mr-2" />
-          Cerrar sesión
+          {isLoggingOut ? "Cerrando..." : "Cerrar sesión"}
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">Vision AI v1.0.0</p>
