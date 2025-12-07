@@ -25,7 +25,7 @@ Las soluciones actuales no ofrecen **navegación indoor instantánea** accesible
 
 ## 💡 Nuestra Solución
 
-Camina AI es el **único sistema que combina**:
+Camin AI es el **único sistema que combina**:
 
 ✅ **Navegación indoor en tiempo real** - Detección instantánea de obstáculos  
 ✅ **Asistente conversacional personalizado** - Entiende tus necesidades y preferencias  
@@ -44,6 +44,7 @@ Camina AI es el **único sistema que combina**:
    - Leer menús según tus alergias
    - Comparar productos según tu presupuesto
    - Identificar billetes y objetos
+   - Revisar detalles del alrededor táles como el clima o factores externos.
 
 ---
 
