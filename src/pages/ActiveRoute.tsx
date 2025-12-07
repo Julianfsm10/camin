@@ -97,8 +97,6 @@ export default function ActiveRoute() {
         return `ALERTA: ${detection.label} ${posText}. Cuidado con el desnivel.`;
       case 'fence':
         return `${detection.label} ${posText}, ${distanceText}.`;
-      case 'unknown_obstacle':
-        return `${detection.label} ${posText}, ${distanceText}.`;
       default:
         return `${detection.label} ${posText}, ${distanceText}.`;
     }
@@ -124,10 +122,6 @@ export default function ActiveRoute() {
       case 'fence':
         // Fence - simple notification
         navigator.vibrate(200);
-        break;
-      case 'unknown_obstacle':
-        // Unknown - warning pattern
-        navigator.vibrate([300, 100, 300]);
         break;
       default:
         // Known objects - distance-based
@@ -185,7 +179,6 @@ export default function ActiveRoute() {
     if (detection.type === 'stair_up') return '⚠️ Escalera subiendo';
     if (detection.type === 'curb') return '🚨 DESNIVEL';
     if (detection.type === 'fence') return 'Reja/Baranda';
-    if (detection.type === 'unknown_obstacle') return '⚠️ Obstáculo';
     return detection.label;
   };
 

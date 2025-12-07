@@ -9,7 +9,6 @@ import {
   translateObjectName,
   getRelativePosition 
 } from "@/lib/detection/detectionConfig";
-import { detectGenericObstacles, calculateOverlap } from "@/lib/detection/genericObstacleDetection";
 import { detectLevelChanges, estimateDistanceFromY } from "@/lib/detection/levelChangeDetection";
 
 interface UseHybridDetectionOptions {
@@ -105,7 +104,7 @@ export function useHybridDetection(options: UseHybridDetectionOptions = {}): Use
     const loadModel = async () => {
       try {
         setIsLoading(true);
-        console.log('Loading COCO-SSD model for hybrid detection...');
+        console.log('Loading COCO-SSD model...');
         const model = await cocoSsd.load({
           base: 'lite_mobilenet_v2'
         });
@@ -180,52 +179,9 @@ export function useHybridDetection(options: UseHybridDetectionOptions = {}): Use
 
       allDetections.push(...knownObjects);
 
-      // ============ LAYER 2: Generic Obstacles ============
-      // Run every 3rd frame for performance
-      if (frameCount.current % 3 === 0) {
-        const genericObstacles = detectGenericObstacles(
-          canvas,
-          video,
-          DETECTION_CONFIG.ROI
-        );
-
-        // Filter out obstacles that overlap with known objects
-        const unknownObstacles = genericObstacles.filter(obstacle => {
-          return !knownObjects.some(known => {
-            if (!known.bbox) return false;
-            return calculateOverlap(obstacle, known.bbox) > 0.4;
-          });
-        });
-
-        // Take only the largest unknown obstacle
-        if (unknownObstacles.length > 0) {
-          const largest = unknownObstacles.reduce((max, obs) => 
-            (obs.width * obs.height > max.width * max.height) ? obs : max
-          );
-          
-          const obstacleSize = (largest.width * largest.height) / (videoWidth * videoHeight);
-          
-          if (obstacleSize > DETECTION_CONFIG.MIN_OBSTACLE_SIZE) {
-            const positionX = (largest.x + largest.width / 2) / videoWidth;
-            const distance = estimateDistanceFromY(largest.y + largest.height, videoHeight);
-            
-            allDetections.push({
-              type: 'unknown_obstacle',
-              label: 'Obstáculo',
-              distance,
-              position: getRelativePosition(positionX),
-              positionX,
-              priority: getDetectionPriority('unknown_obstacle', null, distance),
-              bbox: [largest.x, largest.y, largest.width, largest.height],
-              confidence: largest.confidence,
-            });
-          }
-        }
-      }
-
-      // ============ LAYER 3: Level Changes ============
-      // Run every 5th frame for performance
-      if (levelDetectionEnabled && frameCount.current % 5 === 0) {
+      // ============ LAYER 2: Level Changes (Stairs, Curbs, Fences) ============
+      // Run every 4th frame for performance
+      if (levelDetectionEnabled && frameCount.current % 4 === 0) {
         const levelChanges = detectLevelChanges(canvas, video);
         
         for (const change of levelChanges) {
