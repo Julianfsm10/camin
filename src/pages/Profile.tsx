@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { User, Bell, Volume2, Vibrate, Shield, HelpCircle, LogOut, ChevronRight, Moon, Phone } from "lucide-react";
+import { User, Bell, Volume2, Vibrate, Shield, HelpCircle, LogOut, ChevronRight, Moon, Phone, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -9,6 +9,11 @@ import { Header } from "@/components/layout/Header";
 import { useVoice } from "@/hooks/useVoice";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+interface UserProfile {
+  fullName: string;
+  email: string;
+}
 
 interface SettingItemProps {
   icon: React.ReactNode;
@@ -58,6 +63,54 @@ export default function Profile() {
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [highContrast, setHighContrast] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<UserProfile>({ fullName: "", email: "" });
+
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        speak("No hay sesión activa. Redirigiendo a inicio de sesión");
+        navigate("/auth");
+        return;
+      }
+
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("full_name, email, audio_enabled, vibration_enabled, high_contrast")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) {
+        console.error("Error loading profile:", error);
+        // Use email from auth if profile not found
+        setUserProfile({
+          fullName: user.user_metadata?.full_name || "Usuario",
+          email: user.email || "",
+        });
+      } else if (profile) {
+        setUserProfile({
+          fullName: profile.full_name || "Usuario",
+          email: profile.email || user.email || "",
+        });
+        setAudioEnabled(profile.audio_enabled ?? true);
+        setVibrationEnabled(profile.vibration_enabled ?? true);
+        setHighContrast(profile.high_contrast ?? false);
+      }
+
+      speak(`Perfil de ${profile?.full_name || user.user_metadata?.full_name || "Usuario"}`);
+    } catch (error) {
+      console.error("Error:", error);
+      speak("Error al cargar perfil");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -79,13 +132,6 @@ export default function Profile() {
     navigate("/auth");
   };
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      speak("Pantalla de perfil y configuración. Ajusta tus preferencias de accesibilidad.");
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
-
   const handleToggle = (setting: string, value: boolean) => {
     speak(value ? `${setting} activado` : `${setting} desactivado`);
     if (navigator.vibrate) navigator.vibrate(50);
@@ -95,15 +141,33 @@ export default function Profile() {
     <>
       <Header title="Perfil" />
       <MobileLayout showBottomNav className="py-6 space-y-6">
-        <div className="card-elevated flex items-center gap-4 animate-fade-in">
-          <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-            <User className="w-8 h-8 text-primary" />
+        {loading ? (
+          <div className="card-elevated flex items-center gap-4 animate-fade-in">
+            <div className="w-16 h-16 rounded-full bg-muted animate-pulse" />
+            <div className="flex-1 space-y-2">
+              <div className="h-6 w-32 bg-muted rounded animate-pulse" />
+              <div className="h-4 w-48 bg-muted rounded animate-pulse" />
+            </div>
           </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-semibold text-foreground">Usuario</h2>
-            <p className="text-muted-foreground">usuario@email.com</p>
+        ) : (
+          <div className="card-elevated flex items-center gap-4 animate-fade-in">
+            <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+              <User className="w-8 h-8 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-semibold text-foreground">{userProfile.fullName}</h2>
+              <p className="text-muted-foreground">{userProfile.email}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => { speak("Editar perfil"); navigate("/settings"); }}
+              onMouseEnter={() => speak("Editar perfil")}
+            >
+              <Settings className="w-5 h-5 text-muted-foreground" />
+            </Button>
           </div>
-        </div>
+        )}
 
         <div className="space-y-6 animate-fade-in" style={{ animationDelay: "100ms" }}>
           <section>
