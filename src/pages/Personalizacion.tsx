@@ -200,14 +200,15 @@ export default function Personalizacion() {
                     <SelectValue placeholder="Selecciona tu género" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Male">Masculino</SelectItem>
-                    <SelectItem value="Female">Femenino</SelectItem>
-                    <SelectItem value="Other">Otro</SelectItem>
+                    <SelectItem value="hombre">Masculino</SelectItem>
+                    <SelectItem value="mujer">Femenino</SelectItem>
+                    <SelectItem value="otro">Otro</SelectItem>
+                    <SelectItem value="prefiero_no_decir">Prefiero no decir</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {profileData.gender === "Other" && (
+              {profileData.gender === "otro" && (
                 <div>
                   <Label htmlFor="gender_other" className="text-foreground mb-2 block">Especificar género</Label>
                   <Input
